@@ -1,0 +1,8 @@
+com/jaguar/om/impl/CommonObject.class
+com/jaguar/om/impl/User.class
+com/jaguar/om/impl/BaseDAO.class
+com/jaguar/om/IBaseDAO.class
+com/jaguar/om/IUser.class
+com/jaguar/om/IAccount.class
+com/jaguar/om/ICommonObject.class
+com/jaguar/om/impl/Account.class

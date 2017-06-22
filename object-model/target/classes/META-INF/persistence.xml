@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.1">
+
+    <persistence-unit name="ObjectModel" transaction-type="RESOURCE_LOCAL">
+        <class>com.jaguar.om.impl.Account</class>
+        <class>com.jaguar.om.impl.User</class>
+    <exclude-unlisted-classes>false</exclude-unlisted-classes>
+    <properties>
+        <property name="hibernate.format_sql" value="true" />
+    </properties>
+    </persistence-unit>
+</persistence>

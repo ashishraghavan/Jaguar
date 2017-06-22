@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Failed suite [Custom suite]" parallel="none">
+  <test name="Jaguar(failed)" parallel="none">
+    <classes>
+      <class name="com.jaguar.om.test.DAOTest">
+        <methods>
+          <include name="springTestContextBeforeTestClass"/>
+          <include name="testCreatingApplicationContext"/>
+          <include name="springTestContextPrepareTestInstance"/>
+          <include name="springTestContextAfterTestClass"/>
+          <include name="springTestContextBeforeTestMethod"/>
+          <include name="springTestContextAfterTestMethod"/>
+        </methods>
+      </class> <!-- com.jaguar.om.test.DAOTest -->
+    </classes>
+  </test> <!-- Jaguar(failed) -->
+</suite> <!-- Failed suite [Custom suite] -->

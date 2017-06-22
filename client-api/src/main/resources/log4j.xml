@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <!-- catalina.home should be set for the file value.-->
+    <appender name="appAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="${catalina.home}/logs/om_out.log"/>
+        <param name="Append" value="true"/>
+        <param name="Threshold" value="INFO"/>
+        <param name="maxFileSize" value="20MB"/>
+        <param name="maxBackupIndex" value="4"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern"
+                   value="%p [%d{dd MMM yyyy HH:mm:ss,SSS}] - %C.%M(%L) | %m%n"/>
+        </layout>
+        <!-- Possible filter uses -->
+        <!--<filter class="org.apache.log4j.varia.StringMatchFilter">
+			<param name="StringToMatch" value="/orca/notifs" />
+			<param name="AcceptOnMatch" value="false" />
+		</filter>
+		<filter class="org.apache.log4j.varia.StringMatchFilter">
+			<param name="StringToMatch"
+				value="user_platform_mapped_document_user_platform_id_key" />
+			<param name="AcceptOnMatch" value="false" />
+		</filter>-->
+    </appender>
+
+    <appender name="errorAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="${catalina.home}/logs/admin_error.log"/>
+        <param name="Append" value="true"/>
+        <param name="Threshold" value="ERROR"/>
+        <param name="maxFileSize" value="20MB"/>
+        <param name="maxBackupIndex" value="4"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern"
+                   value="%p [%d{dd MMM yyyy HH:mm:ss,SSS}] - %C.%M(%L) | %m%n"/>
+        </layout>
+    </appender>
+
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern"
+                   value="%p [%d{dd MMM yyyy HH:mm:ss,SSS}] - %C.%M(%L) | %m%n"/>
+        </layout>
+    </appender>
+
+    <logger name="org.apache">
+        <level value="WARN"/>
+    </logger>
+
+    <logger name="org.hibernate">
+        <level value="WARN"/>
+    </logger>
+
+    <logger name="org.hibernate.engine.jdbc.spi">
+        <level value="DEBUG"/>
+    </logger>
+
+    <logger name="com.jaguar">
+        <level value="DEBUG"/>
+    </logger>
+
+    <root>
+        <level value="INFO"/>
+        <!--<appender-ref ref="appAppender"/>-->
+        <!--<appender-ref ref="errorAppender"/>-->
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</log4j:configuration>
