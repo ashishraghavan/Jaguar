@@ -13,6 +13,7 @@ import javax.persistence.PersistenceContext;
 @ContextConfiguration(locations = {"classpath:spring-config.xml"})
 public abstract class BaseTestCase extends AbstractTransactionalTestNGSpringContextTests {
     protected static final String CLIENT_PORT = "18080";
+    final String[] COMMON_EXCLUDE_PROPERTIES = new String[]{"creationDate","modificationDate","active"};
     private IBaseDAO dao;
 
     @Autowired

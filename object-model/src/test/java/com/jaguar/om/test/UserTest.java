@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 @Test
 public class UserTest extends BaseTestCase {
 
-    final String[] excludeProperties = new String[]{"creationDate","modificationDate","active"};
+
     private Long userId;
     private Long accountId;
 
@@ -24,7 +24,7 @@ public class UserTest extends BaseTestCase {
     @Rollback(value = false)
     public void testCreateUser() throws Exception {
         IAccount account = new Account("Jaguar");
-        account = getDao().loadSingleFiltered(account,excludeProperties,false);
+        account = getDao().loadSingleFiltered(account, COMMON_EXCLUDE_PROPERTIES,false);
         Assert.assertNotNull(account);
         accountId = account.getId();
         IUser user = new User(account,"Ashish Raghavan","Ashish","Raghavan","ashish.raghavan@google.com");
@@ -52,7 +52,7 @@ public class UserTest extends BaseTestCase {
         final IAccount account = getDao().load(Account.class,accountId);
         Assert.assertNotNull(account);
         IUser user = new User(account,"ashish.raghavan@google.com");
-        user = getDao().loadSingleFiltered(user,excludeProperties,false);
+        user = getDao().loadSingleFiltered(user, COMMON_EXCLUDE_PROPERTIES,false);
         Assert.assertNotNull(user);
     }
 
