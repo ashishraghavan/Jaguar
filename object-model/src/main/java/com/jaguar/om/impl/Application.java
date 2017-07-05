@@ -48,6 +48,10 @@ public class Application extends CommonObject implements IApplication{
         this.redirectUri = redirectUri;
     }
 
+    public Application(final IAccount account, final String name) {
+        this.account = account;
+        this.name = name;
+    }
 
     public String getName() {
         return this.name;

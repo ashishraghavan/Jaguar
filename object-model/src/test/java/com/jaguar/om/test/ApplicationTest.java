@@ -28,22 +28,36 @@ public class ApplicationTest extends BaseTestCase {
         accountId = account.getId();
         IApplication application = new Application(account,"AppSense","http://localhost:8080/api/client");
         application.setActive(true);
-        application.setClientId(515207);
-        application.setClientSecret("");
+        application = getDao().save(application);
+        Assert.assertNotNull(application);
+
+        application = new Application(account,"TestApp","http://localhost:8080/api/client");
+        application.setActive(true);
+        application = getDao().save(application);
+        Assert.assertNotNull(application);
+        applicationId = application.getId();
     }
 
     @Test(dependsOnMethods = {"createApplication"})
     public void getApplication() throws Exception {
-
+        final IApplication application = getDao().load(Application.class,applicationId);
+        Assert.assertNotNull(application);
     }
 
     @Test(dependsOnMethods = {"getApplication"})
     public void searchApplication() throws Exception {
-
+        final IAccount account = getDao().load(Account.class,accountId);
+        Assert.assertNotNull(account);
+        IApplication application = new Application(account,"TestApp");
+        application = getDao().loadSingleFiltered(application,COMMON_EXCLUDE_PROPERTIES,false);
+        Assert.assertNotNull(application);
     }
 
     @Test(dependsOnMethods = {"searchApplication"})
+    @Rollback(value = false)
     public void deleteApplication() throws Exception {
-
+        final IApplication application = getDao().load(Application.class,applicationId);
+        Assert.assertNotNull(application);
+        getDao().remove(application);
     }
 }
