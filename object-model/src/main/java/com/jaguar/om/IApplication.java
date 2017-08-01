@@ -16,4 +16,10 @@ public interface IApplication extends ICommonObject {
     void setRoles(Set<IApplicationRole> roles);
     IAccount getAccount();
     void setAccount(final IAccount account);
+    //This corresponds to the bundle version (incremental or not)
+    String getVersionCode();
+    void setVersionCode(final String versionCode);
+    //Corresponds to the android package name.
+    String getPackageName();
+    void setPackageName(final String packageName);
 }

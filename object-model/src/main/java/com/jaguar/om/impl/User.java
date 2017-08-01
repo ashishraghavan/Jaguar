@@ -2,13 +2,18 @@ package com.jaguar.om.impl;
 
 
 import com.jaguar.om.IAccount;
+import com.jaguar.om.IDevice;
 import com.jaguar.om.IUser;
 import org.apache.commons.codec.digest.DigestUtils;
 
 
 import javax.persistence.*;
 import org.hibernate.annotations.ForeignKey;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
+
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Table(name = "jaguar_user",uniqueConstraints = {@UniqueConstraint(columnNames = {"account_id","email"})})
@@ -59,6 +64,10 @@ public class User extends CommonObject implements IUser{
     @Column(name = "last_online",nullable = true,insertable = true,updatable = true)
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastOnline;
+
+    @OneToMany(targetEntity = Device.class,cascade = CascadeType.ALL,fetch = FetchType.LAZY,mappedBy = "user",orphanRemoval = true)
+    @LazyCollection(LazyCollectionOption.EXTRA)
+    private Set<IDevice> devices;
 
 
     public String getName() {
@@ -112,4 +121,9 @@ public class User extends CommonObject implements IUser{
     public IAccount getAccount() {
         return this.account;
     }
+
+    public Set<IDevice> getDevices() {
+        return this.devices;
+    }
+
 }

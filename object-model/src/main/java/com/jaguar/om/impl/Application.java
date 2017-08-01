@@ -35,6 +35,12 @@ public class Application extends CommonObject implements IApplication{
     @Column(name = "client_secret",insertable = true,updatable = false,nullable = false)
     private String clientSecret;
 
+    @Column(name = "version_code",nullable = false,insertable = true,updatable = true,length = 150)
+    private String versionCode;
+
+    @Column(name = "package_name",nullable = false,insertable = true,updatable = true,length = 150)
+    private String packageName;
+
     @OneToMany(mappedBy = "application",targetEntity = ApplicationRole.class,fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private Set<IApplicationRole> applicationRoles;
 
@@ -99,5 +105,21 @@ public class Application extends CommonObject implements IApplication{
 
     public void setAccount(IAccount account) {
         this.account = account;
+    }
+
+    public String getVersionCode() {
+        return this.versionCode;
+    }
+
+    public void setVersionCode(String versionCode) {
+        this.versionCode = versionCode;
+    }
+
+    public String getPackageName() {
+        return this.packageName;
+    }
+
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
     }
 }

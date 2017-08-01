@@ -2,6 +2,7 @@ package com.jaguar.om;
 
 
 import java.util.Date;
+import java.util.Set;
 
 public interface IUser extends ICommonObject {
     String getName();
@@ -17,4 +18,5 @@ public interface IUser extends ICommonObject {
     Date getLastOnline();
     void setLastOnline(Date lastOnline);
     IAccount getAccount();
+    Set<IDevice> getDevices();
 }

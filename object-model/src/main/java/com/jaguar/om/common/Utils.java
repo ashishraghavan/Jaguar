@@ -5,8 +5,8 @@ import java.util.Random;
 
 public class Utils {
 
-    private static final Random generator = new Random(1L);
+    private static final Random generator = new Random();
     public static Integer generateKey() {
-        return generator.nextInt();
+        return generator.nextInt(9999999);
     }
 }

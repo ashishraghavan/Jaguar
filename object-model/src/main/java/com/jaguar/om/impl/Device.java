@@ -28,13 +28,11 @@ public class Device extends CommonObject implements IDevice {
         this.user = user;
     }
 
-    public Device(final IAccount account,final String deviceUid,final IUser user,final String model,
-                  final Long versionCode,final Long apiVersion,final String packageName) {
+    public Device(final IAccount account, final String deviceUid, final IUser user, final String model,
+                  final Integer apiVersion) {
         this(account,deviceUid,user);
         this.model = model;
-        this.versionCode = versionCode;
         this.apiVersion = apiVersion;
-        this.packageName = packageName;
     }
 
     @ManyToOne(targetEntity = Account.class,optional = false)
@@ -51,19 +49,13 @@ public class Device extends CommonObject implements IDevice {
     @Column(name = "model",nullable = false,insertable = true,updatable = true,length = 150)
     private String model;
 
-    @Column(name = "version_code",nullable = false,insertable = true,updatable = true,length = 150)
-    private Long versionCode;
-
-    @Column(name = "package_name",nullable = false,insertable = true,updatable = true,length = 150)
-    private String packageName;
-
-    @ManyToOne(targetEntity = User.class,optional = false)
+    @ManyToOne(targetEntity = User.class,optional = false,cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id",insertable = true,updatable = true,nullable = false)
     @ForeignKey(name = "fk_device_user_id")
     private IUser user;
 
     @Column(name = "api_version",nullable = false,insertable = true,updatable = true,length = 50)
-    private Long apiVersion;
+    private Integer apiVersion;
 
     public String getDeviceUId() {
         return this.deviceUid;
@@ -97,22 +89,6 @@ public class Device extends CommonObject implements IDevice {
         this.model = model;
     }
 
-    public Long getVersionCode() {
-        return this.versionCode;
-    }
-
-    public void setVersionCode(Long versionCode) {
-        this.versionCode = versionCode;
-    }
-
-    public String getPackageName() {
-        return this.packageName;
-    }
-
-    public void setPackageName(String packageName) {
-        this.packageName = packageName;
-    }
-
     public IUser getUser() {
         return this.user;
     }
@@ -121,11 +97,11 @@ public class Device extends CommonObject implements IDevice {
         this.user = user;
     }
 
-    public Long getApiVersion() {
+    public Integer getApiVersion() {
         return this.apiVersion;
     }
 
-    public void setApiVersion(Long apiVersion) {
+    public void setApiVersion(Integer apiVersion) {
         this.apiVersion = apiVersion;
     }
 }
