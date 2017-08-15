@@ -2,14 +2,16 @@ package com.jaguar.service;
 
 
 import com.google.gson.Gson;
-import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.IApplication;
+import com.jaguar.om.IBaseDAO;
+import com.jaguar.om.enums.ApplicationType;
 import com.jaguar.om.impl.Application;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,21 +19,35 @@ import org.testng.util.Strings;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
+import java.util.List;
 import java.util.UUID;
 
-@Component
 @Path("/apps")
-public class ApplicationService extends CommonService {
+@Component
+public class ApplicationService {
 
     private static final Logger appServiceLogger = Logger.getLogger(ApplicationService.class.getSimpleName());
     final String APP_COOKIE_NAME = "jaguar_cookie";
+
+    private IBaseDAO dao;
+    @Autowired
+    public void setDao(IBaseDAO dao) {
+        this.dao = dao;
+        appServiceLogger.info("Injection of IBaseDao finished with details: "+this.dao.getEntityManager().toString());
+        appServiceLogger.info("Classname/hashcode : "+this.getClass().getName() + "/"+super.hashCode());
+    }
+
+    public IBaseDAO getDao() {
+        appServiceLogger.info("Classname/hashcode : "+this.getClass().getName() + "/"+super.hashCode());
+        return dao;
+    }
+
 
     @POST
     @Path("/verify")
@@ -111,6 +127,28 @@ public class ApplicationService extends CommonService {
                             .withErrorCode(ErrorMessage.ErrorCode.EXCEPTION.getArgumentCode())
                             .withMessage(e.getLocalizedMessage())
                     ).build();
+        }
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Transactional(readOnly = true)
+    public Response getAllApplications() {
+        final IBaseDAO dao = getDao();
+        try {
+            final IApplication filterApplication = new Application();
+            filterApplication.setActive(true);
+            filterApplication.setApplicationType(ApplicationType.MOBILE_APP);
+            final List<IApplication> applicationList = dao.loadFiltered(filterApplication,false);
+            return Response.ok().entity(new Gson().toJson(applicationList)).build();
+        } catch (Exception e) {
+            appServiceLogger.error("There was an error processing this request with the message "+e.getMessage()+" and cause "+e.getCause());
+            return Response.status(HttpStatus.BAD_REQUEST.value())
+                    .entity(new ErrorMessage.Builder()
+                            .withErrorCode(ErrorMessage.ErrorCode.EXCEPTION.getArgumentCode())
+                            .withMessage(e.getMessage())
+                            .build())
+                    .build();
         }
     }
 

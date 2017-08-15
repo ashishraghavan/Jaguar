@@ -9,10 +9,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class CommonService {
     protected final Logger serviceLogger = Logger.getRootLogger();
-
-    @Autowired
     protected IBaseDAO dao;
 
+    @Autowired
     public void setDao(IBaseDAO dao) {
         this.dao = dao;
     }
