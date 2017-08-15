@@ -1,6 +1,8 @@
 package com.jaguar.om;
 
 
+import com.jaguar.om.enums.ApplicationType;
+
 import java.util.Set;
 
 public interface IApplication extends ICommonObject {
@@ -22,4 +24,7 @@ public interface IApplication extends ICommonObject {
     //Corresponds to the android package name.
     String getPackageName();
     void setPackageName(final String packageName);
+    //The type of this application - web or mobile application
+    ApplicationType getApplicationType();
+    void setApplicationType(final ApplicationType applicationType);
 }

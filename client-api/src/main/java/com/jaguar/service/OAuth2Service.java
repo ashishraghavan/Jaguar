@@ -3,6 +3,7 @@ package com.jaguar.service;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.ApplicationRole;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
@@ -37,14 +38,35 @@ public class OAuth2Service {
                           @QueryParam("scope") final String scope) {
         //Make sure all query parameters except scope is present
         if(Strings.isNullOrEmpty(responseType)) {
-            return Response.status(400).entity(new ErrorMessage.Builder().withMessage("Response type is requried for this request").build()).build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withMessage("Response type")
+                    .build())
+                    .build();
         }
+
         if(Strings.isNullOrEmpty(clientId)) {
-            return Response.status(400).entity(new ErrorMessage.Builder().withMessage("Client id is required for this request").build()).build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withMessage("Client Id")
+                    .build())
+                    .build();
         }
+
         if(Strings.isNullOrEmpty(redirectUri)) {
-            return Response.status(400).entity(new ErrorMessage.Builder().withMessage("Redirect URI is required for this request").build()).build();
+            return Response.status(400).entity(new ErrorMessage.Builder()
+                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withMessage("Redirect URI")
+                    .build())
+                    .build();
         }
+
+        //If at this point, the user as already logged in, we send a response ok indicating
+        //that the front-end should show the options of "Allow application to give so and so
+        //access" or "Deny request". Depending on whether this user has already given this
+        //particular application
+
+        //We might have to query the UserApplication table to see
         //scope is not a required parameter for this request.
         return Response.ok().build();
     }

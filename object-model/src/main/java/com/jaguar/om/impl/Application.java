@@ -2,14 +2,12 @@ package com.jaguar.om.impl;
 
 import com.jaguar.om.IAccount;
 import com.jaguar.om.IApplication;
-
-import javax.persistence.*;
-
 import com.jaguar.om.IApplicationRole;
 import com.jaguar.om.common.Utils;
+import com.jaguar.om.enums.ApplicationType;
 import org.hibernate.annotations.ForeignKey;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+
+import javax.persistence.*;
 import java.util.Set;
 import java.util.UUID;
 
@@ -41,17 +39,30 @@ public class Application extends CommonObject implements IApplication{
     @Column(name = "package_name",nullable = false,insertable = true,updatable = true,length = 150)
     private String packageName;
 
+    @Column(name = "app_type",nullable = false,insertable = true,updatable = true,length = 30)
+    @Enumerated(EnumType.STRING)
+    private ApplicationType applicationType;
+
     @OneToMany(mappedBy = "application",targetEntity = ApplicationRole.class,fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private Set<IApplicationRole> applicationRoles;
 
 
-    public Application(){}
-    public Application(final IAccount account,final String name,final String redirectUri) {
+    public Application(){
+        super();
+    }
+
+    public Application(final Integer clientId) {
+        super();
+        this.clientId = clientId;
+    }
+    public Application(final IAccount account, final String name, final String redirectUri, ApplicationType applicationType,final String packageName) {
         this.account = account;
         this.clientId = Utils.generateKey();
         this.clientSecret = UUID.randomUUID().toString();
         this.name = name;
         this.redirectUri = redirectUri;
+        this.applicationType = applicationType;
+        this.packageName = packageName;
     }
 
     public Application(final IAccount account, final String name) {
@@ -121,5 +132,13 @@ public class Application extends CommonObject implements IApplication{
 
     public void setPackageName(String packageName) {
         this.packageName = packageName;
+    }
+
+    public ApplicationType getApplicationType() {
+        return this.applicationType;
+    }
+
+    public void setApplicationType(ApplicationType applicationType) {
+        this.applicationType = applicationType;
     }
 }

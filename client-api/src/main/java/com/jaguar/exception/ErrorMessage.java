@@ -15,7 +15,11 @@ public class ErrorMessage {
     private static final Logger logger = Logger.getLogger(ErrorMessage.class.getSimpleName());
 
     public enum ErrorCode {
-        ARGUMENT_REQUIRED(1);
+        ARGUMENT_REQUIRED(1),
+        INVALID_ARGUMENT(2),
+        EXCEPTION(3),
+        INVALID_HASH(4),
+        NULL_OBJECT_FROM_QUERY(5);
 
         private Integer argumentCode;
         ErrorCode(final Integer argumentCode) {
@@ -28,6 +32,11 @@ public class ErrorMessage {
 
     private static final Map<Integer,String> errorCodeMap = ImmutableMap.<Integer,String>builder()
             .put(ErrorCode.ARGUMENT_REQUIRED.argumentCode,"Argument %s is required for this request")
+            .put(ErrorCode.INVALID_ARGUMENT.argumentCode,"Argument %s is not in the correct format. Expected format is %s")
+            .put(ErrorCode.EXCEPTION.argumentCode,"An error occurred with message %s")
+            //Do not send the value of the correct hash here! The first string argument is the hash sent by the client.
+            .put(ErrorCode.INVALID_HASH.argumentCode,"The computed hash %s is incorrect.")
+            .put(ErrorCode.NULL_OBJECT_FROM_QUERY.argumentCode,"The query for %s returned empty.")
             .build();
     /**
      * Try getting the error message from

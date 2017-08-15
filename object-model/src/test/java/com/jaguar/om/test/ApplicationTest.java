@@ -3,6 +3,7 @@ package com.jaguar.om.test;
 
 import com.jaguar.om.IAccount;
 import com.jaguar.om.IApplication;
+import com.jaguar.om.enums.ApplicationType;
 import com.jaguar.om.impl.Account;
 import com.jaguar.om.impl.Application;
 import org.springframework.test.annotation.Rollback;
@@ -26,12 +27,14 @@ public class ApplicationTest extends BaseTestCase {
         account = getDao().loadSingleFiltered(account,COMMON_EXCLUDE_PROPERTIES,false);
         Assert.assertNotNull(account);
         accountId = account.getId();
-        IApplication application = new Application(account,"AppSense","http://localhost:8080/api/client");
+        IApplication application = new Application(account,"AppSense","http://localhost:8080/api/client", ApplicationType.MOBILE_APP,"com.jaguar.jaguarxf");
+        application.setVersionCode("1.0");
         application.setActive(true);
         application = getDao().save(application);
         Assert.assertNotNull(application);
 
-        application = new Application(account,"TestApp","http://localhost:8080/api/client");
+        application = new Application(account,"TestApp","http://localhost:8080/api/client", ApplicationType.MOBILE_APP,"com.jaguar.jaguarrf");
+        application.setVersionCode("1.0");
         application.setActive(true);
         application = getDao().save(application);
         Assert.assertNotNull(application);
