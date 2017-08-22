@@ -30,6 +30,7 @@ public class Application extends CommonObject implements IApplication{
     @Column(name = "client_id",unique = true,insertable = true,updatable = false,nullable = false)
     private Integer clientId;
 
+
     @Column(name = "client_secret",insertable = true,updatable = false,nullable = false)
     private String clientSecret;
 

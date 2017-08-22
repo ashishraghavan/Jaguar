@@ -2,6 +2,7 @@ package com.jaguar.service;
 
 
 import com.google.gson.Gson;
+import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.IApplication;
 import com.jaguar.om.IBaseDAO;
@@ -11,18 +12,15 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
+import javax.annotation.security.PermitAll;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.*;
 import java.util.List;
@@ -30,27 +28,14 @@ import java.util.UUID;
 
 @Path("/apps")
 @Component
-public class ApplicationService {
+public class ApplicationService extends CommonService {
 
     private static final Logger appServiceLogger = Logger.getLogger(ApplicationService.class.getSimpleName());
     final String APP_COOKIE_NAME = "jaguar_cookie";
 
-    private IBaseDAO dao;
-    @Autowired
-    public void setDao(IBaseDAO dao) {
-        this.dao = dao;
-        appServiceLogger.info("Injection of IBaseDao finished with details: "+this.dao.getEntityManager().toString());
-        appServiceLogger.info("Classname/hashcode : "+this.getClass().getName() + "/"+super.hashCode());
-    }
-
-    public IBaseDAO getDao() {
-        appServiceLogger.info("Classname/hashcode : "+this.getClass().getName() + "/"+super.hashCode());
-        return dao;
-    }
-
-
     @POST
     @Path("/verify")
+    @PermitAll
     @Transactional(readOnly = false)
     public Response verify(final @Context ContainerRequestContext requestContext,
                            final @Context UriInfo uriInfo,
@@ -112,12 +97,23 @@ public class ApplicationService {
                         .build();
             }
 
+            //Create a random app session value.
             final String appCookieSession = UUID.randomUUID().toString();
             //Get application converted to JSON object
-            final String appGson = new Gson().toJson(application);
+            final String appGson = gson.toJson(application);
             //Store this cookie session value in an in-memory cache so that
-            //during verification, we know that the cookie is comning from the correct client.
-            final NewCookie cookie = new NewCookie(APP_COOKIE_NAME, appCookieSession,uriInfo.getPath(),"","cookie for creating app session",100,false);
+            //during verification, we know that the cookie is coming from the correct client application.
+            //If an application is already present with this app session cookie, we overwrite the value since the application
+            //might be verifying for a new session.
+            cacheManager.getAppCache().put(appCookieSession,application);
+            final NewCookie cookie = new NewCookie(APP_COOKIE_NAME,
+                    appCookieSession,
+                    uriInfo.getPath(),
+                    "",
+                    "cookie for creating app session",
+                    100,
+                    false);
+            //Add this session somewhere in the in-memory cache.
             return Response.ok().cookie(cookie).entity(appGson).build();
 
         } catch (Exception e) {
@@ -128,6 +124,25 @@ public class ApplicationService {
                             .withMessage(e.getLocalizedMessage())
                     ).build();
         }
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @PermitAll
+    @Transactional(readOnly = true)
+    public Response isVerificationValid(@CookieParam(APP_COOKIE_NAME) final String appSessionCookie) {
+        if(Strings.isNullOrEmpty(appSessionCookie)) {
+            appServiceLogger.error("An application session cookie is required for this request");
+            return Response.status(HttpStatus.BAD_REQUEST.value())
+                    .entity(new ErrorMessage.Builder()
+                            .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                            .withMessage("Cookie param "+APP_COOKIE_NAME).build()).build();
+        }
+        if(cacheManager.getAppCache().getIfPresent(appSessionCookie) != null) {
+            //This session is still valid.
+            return Response.ok().build();
+        }
+        return Response.status(HttpStatus.BAD_REQUEST.value()).entity("Invalid app session. Please re-verify").build();
     }
 
     @GET
