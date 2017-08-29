@@ -27,14 +27,14 @@ public class DeviceTest extends BaseTestCase {
         accountId = account.getId();
 
         //create a dummy user too to create the device (register the device)
-        IUser user = new User(account,"Dummy User","Dummy","User","dummy.user@dummyweb.com");
+        IUser user = new User(account,"Dummy User","Dummy","User","dummy.user@dummyweb.com","4082216275");
         user.setPassword("yourass");
         user = getDao().save(user);
         Assert.assertNotNull(user);
         userIdArr[0] = user.getId();
 
         //Create another dummy user and associate with the same device.
-        IUser user2 = new User(account,"Dummy User 2","Dummy","User","dummy.user2@dummyweb.com");
+        IUser user2 = new User(account,"Dummy User 2","Dummy","User","dummy.user2@dummyweb.com","4082216275");
         user2.setPassword("myass");
         user2 = getDao().save(user2);
         userIdArr[1] = user2.getId();

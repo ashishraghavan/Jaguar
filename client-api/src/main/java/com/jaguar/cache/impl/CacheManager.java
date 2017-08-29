@@ -17,14 +17,20 @@ public class CacheManager implements ICacheManager {
     private static final Logger cacheLogger = Logger.getLogger(CacheManager.class.getSimpleName());
     private final long APP_SESSION_DURATION = 15;
     //Application tokens are usually a day long.
-    private final long APP_TOKEN_DURATION = 1;
+    private final long USER_APP_DURATION = 1;
+    private final long TOKEN_DURATION = 1;
+    private final long REFRESH_TOKEN_DURATION = 1;
     private final Calendar calendar = Calendar.getInstance();
     //Here key would the app session identifier (random) and value will be the application against which this was obtained.
     protected final Cache<String,IApplication> appSessionCache = CacheBuilder
             .newBuilder().expireAfterWrite(APP_SESSION_DURATION, TimeUnit.DAYS).recordStats().build();
     //This is the token cache.
-    protected final Cache<IUser,IApplication> tokenCache = CacheBuilder
-            .newBuilder().expireAfterWrite(APP_TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
+    protected final Cache<IUser,IApplication> userApplicationCache = CacheBuilder
+            .newBuilder().expireAfterWrite(USER_APP_DURATION,TimeUnit.DAYS).recordStats().build();
+    protected final Cache<String,IUser> tokenCache = CacheBuilder
+            .newBuilder().expireAfterWrite(TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
+    protected final Cache<String,IUser> refreshTokenCache = CacheBuilder
+            .newBuilder().expireAfterWrite(REFRESH_TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
 
 
     @Override
@@ -33,8 +39,18 @@ public class CacheManager implements ICacheManager {
     }
 
     @Override
-    public Cache<IUser, IApplication> getTokenCache() {
+    public Cache<IUser, IApplication> getUserApplicationCache() {
+        return userApplicationCache;
+    }
+
+    @Override
+    public Cache<String, IUser> getTokenCache() {
         return tokenCache;
+    }
+
+    @Override
+    public Cache<String, IUser> getRefreshTokenCache() {
+        return refreshTokenCache;
     }
 
     @SuppressWarnings("unused")

@@ -1,5 +1,0 @@
-com/jaguar/service/AccountService.class
-com/jaguar/jersey/Application.class
-com/jaguar/jersey/provider/OAuthFilter.class
-com/jaguar/service/VersionService.class
-com/jaguar/common/CommonService.class

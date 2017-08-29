@@ -27,13 +27,13 @@ public class UserTest extends BaseTestCase {
         account = getDao().loadSingleFiltered(account, COMMON_EXCLUDE_PROPERTIES,false);
         Assert.assertNotNull(account);
         accountId = account.getId();
-        IUser user = new User(account,"Ashish Raghavan","Ashish","Raghavan","ashish.raghavan@google.com");
+        IUser user = new User(account,"Ashish Raghavan","Ashish","Raghavan","ashish.raghavan@google.com","4082216275");
         user.setPassword("12345");
         user.setActive(true);
         getDao().save(user);
 
         //create another dummy user for test purposes with the same account.
-        user = new User(account,"Test User","Test","User","test.user@google.com");
+        user = new User(account,"Test User","Test","User","test.user@google.com","4082216275");
         user.setPassword("12345");
         user.setActive(true);
         user = getDao().save(user);

@@ -1,12 +1,9 @@
 package com.jaguar.service;
 
 
-import com.google.gson.Gson;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.IApplication;
-import com.jaguar.om.IBaseDAO;
-import com.jaguar.om.enums.ApplicationType;
 import com.jaguar.om.impl.Application;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -23,7 +20,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.*;
-import java.util.List;
 import java.util.UUID;
 
 @Path("/apps")
@@ -31,8 +27,18 @@ import java.util.UUID;
 public class ApplicationService extends CommonService {
 
     private static final Logger appServiceLogger = Logger.getLogger(ApplicationService.class.getSimpleName());
-    final String APP_COOKIE_NAME = "jaguar_cookie";
 
+    /**
+     *
+     * @param requestContext The request context provided by the Jersey framework.
+     * @param uriInfo UriInfo provided by the Jersey framework
+     * @param currentTime The timestamp used to generate the hash on the client side.
+     * @param clientId The client id used to generate the hash on the client side. This
+     *                 must match the client id the the application was assigned.
+     * @param computedHash The hash value sent by the client for verification.
+     * @return {@link HttpStatus#OK} with a cookie value as the session token. A
+     *         detailed information about the verifying application is also sent.
+     */
     @POST
     @Path("/verify")
     @PermitAll
@@ -43,7 +49,7 @@ public class ApplicationService extends CommonService {
                            @FormDataParam("client_id") final String clientId,
                            @FormDataParam("hash") final String computedHash) {
         if(Strings.isNullOrEmpty(currentTime)) {
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                     .withMessage("Time")
                     .build())
@@ -51,7 +57,7 @@ public class ApplicationService extends CommonService {
         }
 
         if(Strings.isNullOrEmpty(clientId)) {
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                     .withMessage("Client Id")
                     .build())
@@ -59,7 +65,7 @@ public class ApplicationService extends CommonService {
         }
 
         if(Strings.isNullOrEmpty(computedHash)) {
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                     .withMessage("Computed Hash")
                     .build())
@@ -67,7 +73,7 @@ public class ApplicationService extends CommonService {
         }
 
         if(!NumberUtils.isCreatable(clientId)) {
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.INVALID_ARGUMENT.getArgumentCode())
                     .withMessage("Client Id", "123...9")
                     .build())
@@ -81,7 +87,7 @@ public class ApplicationService extends CommonService {
             application = getDao().loadSingleFiltered(application,null,false);
             if(application == null) {
                 return Response.status(HttpStatus.BAD_REQUEST.value())
-                        .entity(new ErrorMessage.Builder().withErrorCode(ErrorMessage.ErrorCode.NULL_OBJECT_FROM_QUERY.getArgumentCode())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.NULL_OBJECT_FROM_QUERY.getArgumentCode())
                                 .withMessage("application with client id " + clientId)
                                 .build())
                         .build();
@@ -90,7 +96,7 @@ public class ApplicationService extends CommonService {
             //See if the computed hash the client is sending us is
             //the same as the one computed by us.
             if(!doComputeAndCompare(currentTime,appSecret,computedHash)) {
-                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                         .withErrorCode(ErrorMessage.ErrorCode.INVALID_HASH.getArgumentCode())
                         .withMessage(computedHash)
                         .build())
@@ -119,7 +125,7 @@ public class ApplicationService extends CommonService {
         } catch (Exception e) {
             appServiceLogger.error("Failed to query/filter application with error "+e.getLocalizedMessage());
             return Response.status(HttpStatus.BAD_REQUEST.value())
-                    .entity(new ErrorMessage.Builder()
+                    .entity(ErrorMessage.builder()
                             .withErrorCode(ErrorMessage.ErrorCode.EXCEPTION.getArgumentCode())
                             .withMessage(e.getLocalizedMessage())
                     ).build();
@@ -134,7 +140,7 @@ public class ApplicationService extends CommonService {
         if(Strings.isNullOrEmpty(appSessionCookie)) {
             appServiceLogger.error("An application session cookie is required for this request");
             return Response.status(HttpStatus.BAD_REQUEST.value())
-                    .entity(new ErrorMessage.Builder()
+                    .entity(ErrorMessage.builder()
                             .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                             .withMessage("Cookie param "+APP_COOKIE_NAME).build()).build();
         }
@@ -143,28 +149,6 @@ public class ApplicationService extends CommonService {
             return Response.ok().build();
         }
         return Response.status(HttpStatus.BAD_REQUEST.value()).entity("Invalid app session. Please re-verify").build();
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Transactional(readOnly = true)
-    public Response getAllApplications() {
-        final IBaseDAO dao = getDao();
-        try {
-            final IApplication filterApplication = new Application();
-            filterApplication.setActive(true);
-            filterApplication.setApplicationType(ApplicationType.MOBILE_APP);
-            final List<IApplication> applicationList = dao.loadFiltered(filterApplication,false);
-            return Response.ok().entity(new Gson().toJson(applicationList)).build();
-        } catch (Exception e) {
-            appServiceLogger.error("There was an error processing this request with the message "+e.getMessage()+" and cause "+e.getCause());
-            return Response.status(HttpStatus.BAD_REQUEST.value())
-                    .entity(new ErrorMessage.Builder()
-                            .withErrorCode(ErrorMessage.ErrorCode.EXCEPTION.getArgumentCode())
-                            .withMessage(e.getMessage())
-                            .build())
-                    .build();
-        }
     }
 
     /**

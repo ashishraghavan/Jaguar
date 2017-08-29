@@ -11,7 +11,7 @@ import javax.persistence.*;
 import java.util.Set;
 
 @Entity
-@Table(name = "jaguar_device",uniqueConstraints = {@UniqueConstraint(columnNames = {"device_uid","user_id"})})
+@Table(name = "jaguar_device",uniqueConstraints = {@UniqueConstraint(columnNames = {"device_uid","user_id"}),@UniqueConstraint(columnNames = {"account_id","device_uid"})})
 @AttributeOverride(name = "id",column = @Column(name = "device_id"))
 public class Device extends CommonObject implements IDevice {
 
@@ -20,6 +20,11 @@ public class Device extends CommonObject implements IDevice {
     public Device(final IAccount account) {
         this();
         this.account = account;
+    }
+
+    public Device(final IAccount account,final String deviceUid) {
+        this(account);
+        this.deviceUid = deviceUid;
     }
 
     public Device(final IAccount account,final String deviceUid,final IUser user) {
@@ -56,6 +61,9 @@ public class Device extends CommonObject implements IDevice {
 
     @Column(name = "api_version",nullable = false,insertable = true,updatable = true,length = 50)
     private Integer apiVersion;
+
+    @Column(name = "notification_service_id",nullable = true,insertable = true,updatable = true)
+    private String notificationServiceId;
 
     public String getDeviceUId() {
         return this.deviceUid;
@@ -103,5 +111,15 @@ public class Device extends CommonObject implements IDevice {
 
     public void setApiVersion(Integer apiVersion) {
         this.apiVersion = apiVersion;
+    }
+
+    @Override
+    public void setNotificationServiceId(String notificationServiceId) {
+        this.notificationServiceId = notificationServiceId;
+    }
+
+    @Override
+    public String getNotificationServiceId() {
+        return this.notificationServiceId;
     }
 }

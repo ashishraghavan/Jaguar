@@ -7,5 +7,9 @@ import jersey.repackaged.com.google.common.cache.Cache;
 
 public interface ICacheManager {
     Cache<String, IApplication> getAppCache();
-    Cache<IUser, IApplication> getTokenCache();
+    Cache<IUser, IApplication> getUserApplicationCache();
+    //Token cache
+    Cache<String,IUser> getTokenCache();
+    //Refresh token cache.
+    Cache<String,IUser> getRefreshTokenCache();
 }

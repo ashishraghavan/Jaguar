@@ -19,4 +19,7 @@ public interface IUser extends ICommonObject {
     void setLastOnline(Date lastOnline);
     IAccount getAccount();
     Set<IDevice> getDevices();
+    void setPhoneNumber(final String phoneNumber);
+    String getPhoneNumber();
+
 }

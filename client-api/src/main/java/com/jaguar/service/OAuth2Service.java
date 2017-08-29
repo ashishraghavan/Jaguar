@@ -1,19 +1,24 @@
 package com.jaguar.service;
 
 import com.jaguar.exception.ErrorMessage;
+import com.jaguar.om.IUserApplication;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.ApplicationRole;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @Path("/oauth")
@@ -38,7 +43,7 @@ public class OAuth2Service {
                           @QueryParam("scope") final String scope) {
         //Make sure all query parameters except scope is present
         if(Strings.isNullOrEmpty(responseType)) {
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                     .withMessage("Response type")
                     .build())
@@ -46,7 +51,7 @@ public class OAuth2Service {
         }
 
         if(Strings.isNullOrEmpty(clientId)) {
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new ErrorMessage.Builder()
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                     .withMessage("Client Id")
                     .build())
@@ -54,7 +59,7 @@ public class OAuth2Service {
         }
 
         if(Strings.isNullOrEmpty(redirectUri)) {
-            return Response.status(400).entity(new ErrorMessage.Builder()
+            return Response.status(400).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
                     .withMessage("Redirect URI")
                     .build())
@@ -68,6 +73,28 @@ public class OAuth2Service {
 
         //We might have to query the UserApplication table to see
         //scope is not a required parameter for this request.
+        return Response.ok().build();
+    }
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Transactional(readOnly = false)
+    public Response updateAuthorization(final @FormDataParam("authorization") String authorization) {
+        if(Strings.isNullOrEmpty(authorization)) {
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withMessage("Authorization value").build()).build();
+        }
+        final List<String> authorizations = Arrays.asList(IUserApplication.Authorization.stringValues());
+        if(!authorizations.contains(authorization)) {
+            //If authorization is not a valid authorization value, we send back an error.
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ErrorCode.INVALID_ARGUMENT.getArgumentCode())
+                    .withMessage("Authorization","among "+ authorizations.toString()).build()).build();
+        }
+
+        //Check if this user has already authorized this application.
+        //We check the user application table for the authorzation.
         return Response.ok().build();
     }
 }

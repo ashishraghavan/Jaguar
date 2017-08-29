@@ -25,4 +25,6 @@ public interface IDevice extends ICommonObject {
     //We deal only with API versions greater than 15 [which covers maximum of devices]
     Integer getApiVersion();
     void setApiVersion(Integer apiVersion);
+    void setNotificationServiceId(final String notificationServiceId);
+    String getNotificationServiceId();
 }

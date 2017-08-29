@@ -1,6 +1,7 @@
 package com.jaguar.exception;
 
 
+import com.google.gson.Gson;
 import jersey.repackaged.com.google.common.collect.ImmutableMap;
 import org.apache.log4j.Logger;
 import org.springframework.util.StringUtils;
@@ -13,13 +14,17 @@ public class ErrorMessage {
     private Integer errorCode;
     private String errorMessage;
     private static final Logger logger = Logger.getLogger(ErrorMessage.class.getSimpleName());
+    private static final Gson gson = new Gson();
 
     public enum ErrorCode {
         ARGUMENT_REQUIRED(1),
         INVALID_ARGUMENT(2),
         EXCEPTION(3),
         INVALID_HASH(4),
-        NULL_OBJECT_FROM_QUERY(5);
+        NULL_OBJECT_FROM_QUERY(5),
+        COOKIE_NOT_VALID(6),
+        FREE_FORM(7),
+        NOT_FOUND(8);
 
         private Integer argumentCode;
         ErrorCode(final Integer argumentCode) {
@@ -30,6 +35,10 @@ public class ErrorMessage {
         }
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     private static final Map<Integer,String> errorCodeMap = ImmutableMap.<Integer,String>builder()
             .put(ErrorCode.ARGUMENT_REQUIRED.argumentCode,"Argument %s is required for this request")
             .put(ErrorCode.INVALID_ARGUMENT.argumentCode,"Argument %s is not in the correct format. Expected format is %s")
@@ -37,6 +46,9 @@ public class ErrorMessage {
             //Do not send the value of the correct hash here! The first string argument is the hash sent by the client.
             .put(ErrorCode.INVALID_HASH.argumentCode,"The computed hash %s is incorrect.")
             .put(ErrorCode.NULL_OBJECT_FROM_QUERY.argumentCode,"The query for %s returned empty.")
+            .put(ErrorCode.COOKIE_NOT_VALID.argumentCode,"Invalid cookie. Please re-verify and try again")
+            .put(ErrorCode.FREE_FORM.argumentCode,"%s")
+            .put(ErrorCode.NOT_FOUND.argumentCode,"%s was not found on this system")
             .build();
     /**
      * Try getting the error message from
@@ -58,7 +70,7 @@ public class ErrorMessage {
         private Integer errorCode;
         private String substitutedMessage;
 
-        public Builder() {}
+        private Builder() {}
 
         public Builder withErrorCode(final Integer errorCode) {
             if(!errorCodeMap.containsKey(errorCode)) {
@@ -73,19 +85,28 @@ public class ErrorMessage {
             return this;
         }
 
-        public ErrorMessage build() {
+        public String build() {
             //The number of %s should be equal to the message length.
             final int countOfStrFormat = StringUtils.countOccurrencesOf(errorCodeMap.get(errorCode),"%s");
-            if(countOfStrFormat != this.message.length) {
+            if(this.message != null && countOfStrFormat != this.message.length) {
                 throw new IllegalArgumentException("Expected the number of arguments to be "+countOfStrFormat+" but found "+this.message.length);
             }
             try {
-                this.substitutedMessage = String.format(errorCodeMap.get(errorCode),this.message);
+                if(countOfStrFormat > 0) {
+                    //We only need to format the string if there are any string identifiers (%s)
+                    this.substitutedMessage = String.format(errorCodeMap.get(errorCode),this.message);
+                } else {
+                    //Other wise, we directly use the original message in the map.
+                    this.substitutedMessage = errorCodeMap.get(errorCode);
+                }
+
             } catch (Exception e) {
                 logger.error("Formatting with arguments "+stringifyArray(message)+" failed with message "+e.getMessage());
                 throw new IllegalArgumentException("Expected the number of arguments to be "+countOfStrFormat+" but found "+this.message.length);
             }
-            return new ErrorMessage(this.errorCode,this.substitutedMessage);
+
+            //We can write a different method which does not convert to JSON always.
+            return gson.toJson(new ErrorMessage(this.errorCode,this.substitutedMessage));
         }
 
         private String stringifyArray(final String[] strArray) {

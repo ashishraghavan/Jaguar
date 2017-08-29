@@ -32,12 +32,13 @@ public class User extends CommonObject implements IUser{
         this.email = email;
     }
 
-    public User(final IAccount account,final String name,final String firstName,final String lastName,final String email) {
+    public User(final IAccount account,final String name,final String firstName,final String lastName,final String email,final String phoneNumber) {
         this(account);
         this.name = name;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.phoneNumber = phoneNumber;
     }
 
     @Column(name = "name",nullable = true,insertable = true,updatable = true,length = 100)
@@ -64,6 +65,9 @@ public class User extends CommonObject implements IUser{
     @Column(name = "last_online",nullable = true,insertable = true,updatable = true)
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastOnline;
+
+    @Column(name = "phone_number",nullable = true, insertable = true,updatable = true)
+    private String phoneNumber;
 
     @OneToMany(targetEntity = Device.class,cascade = CascadeType.ALL,fetch = FetchType.LAZY,mappedBy = "user",orphanRemoval = true)
     @LazyCollection(LazyCollectionOption.EXTRA)
@@ -124,6 +128,16 @@ public class User extends CommonObject implements IUser{
 
     public Set<IDevice> getDevices() {
         return this.devices;
+    }
+
+    @Override
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    @Override
+    public String getPhoneNumber() {
+        return this.phoneNumber;
     }
 
 }

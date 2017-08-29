@@ -1,6 +1,8 @@
 package com.jaguar.common;
 
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.jaguar.cache.ICacheManager;
 import com.jaguar.om.IBaseDAO;
@@ -16,6 +18,9 @@ public class CommonService {
     protected final Gson gson = new Gson();
     protected ICacheManager cacheManager;
     private final String classNameHashCodeTemplate = "Classname/hashcode : %s / %d";
+    protected final String APP_COOKIE_NAME = "jaguar_cookie";
+    protected final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false)
+            .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,false).configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE,false);
 
     @Autowired
     public void setDao(IBaseDAO dao) {

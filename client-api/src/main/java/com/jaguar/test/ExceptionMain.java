@@ -10,8 +10,8 @@ public class ExceptionMain {
     public static void main(String[] args) throws Exception {
         final String currentTime = String.valueOf(System.currentTimeMillis());
         System.out.println(currentTime);
-        final Integer clientId = 1338201;
-        final String secret = "711ca2a2-3b07-4fe8-a0e4-e129d7f4690e";
+        final Integer clientId = 2190832;
+        final String secret = "7a5e9fc6-290b-4c97-8386-67237414f469";
 
         final Mac hmac = Mac.getInstance("HmacSHA256");
         final SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(),"HmacSHA256");

@@ -24,3 +24,11 @@ object-model/target/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+.idea/
+Jaguar.iml
+chat/chat.iml
+chat/src/
+chat/target/
+client-api/src/main/java/com/jaguar/client/
+general-api-developer-guide.pdf
+lib/

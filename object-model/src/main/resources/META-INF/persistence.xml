@@ -9,6 +9,9 @@
         <class>com.jaguar.om.impl.Device</class>
         <class>com.jaguar.om.impl.DeviceApplication</class>
         <class>com.jaguar.om.impl.Role</class>
+        <class>com.jaguar.om.impl.Address</class>
+        <class>com.jaguar.om.impl.DeviceUser</class>
+        <class>com.jaguar.om.impl.UserApplication</class>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>
         <property name="hibernate.format_sql" value="true" />
