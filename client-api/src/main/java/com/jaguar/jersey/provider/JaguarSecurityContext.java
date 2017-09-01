@@ -19,7 +19,7 @@ public class JaguarSecurityContext implements SecurityContext {
 
     @Override
     public Principal getUserPrincipal() {
-        return user::getName;
+        return user;
     }
 
     @Override

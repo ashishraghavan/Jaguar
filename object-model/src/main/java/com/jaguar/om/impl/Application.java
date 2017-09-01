@@ -5,9 +5,11 @@ import com.jaguar.om.IApplication;
 import com.jaguar.om.IApplicationRole;
 import com.jaguar.om.common.Utils;
 import com.jaguar.om.enums.ApplicationType;
+import org.apache.log4j.Logger;
 import org.hibernate.annotations.ForeignKey;
 
 import javax.persistence.*;
+import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
 
@@ -15,6 +17,8 @@ import java.util.UUID;
 @Table(name = "jaguar_application",uniqueConstraints = {@UniqueConstraint(columnNames = {"account_id","name"})})
 @AttributeOverride(name = "id",column = @Column(name = "application_id"))
 public class Application extends CommonObject implements IApplication{
+
+    private static final Logger appObjModelLogger = Logger.getLogger(Application.class.getSimpleName());
 
     @ManyToOne(targetEntity = Account.class,optional = false)
     @JoinColumn(name = "account_id",insertable = true,updatable = true,nullable = false)
@@ -43,6 +47,9 @@ public class Application extends CommonObject implements IApplication{
     @Column(name = "app_type",nullable = false,insertable = true,updatable = true,length = 30)
     @Enumerated(EnumType.STRING)
     private ApplicationType applicationType;
+
+    @Column(name = "login_page",nullable = false,insertable = true,updatable = true)
+    private String loginPage;
 
     @OneToMany(mappedBy = "application",targetEntity = ApplicationRole.class,fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private Set<IApplicationRole> applicationRoles;
@@ -141,5 +148,18 @@ public class Application extends CommonObject implements IApplication{
 
     public void setApplicationType(ApplicationType applicationType) {
         this.applicationType = applicationType;
+    }
+
+    @Override
+    public void setLoginPage(String uri) {
+        //Verify that this is a correct URI
+        final URI formedUri = URI.create(uri);
+        appObjModelLogger.info("The URI is formed correctly");
+        this.loginPage = uri;
+    }
+
+    @Override
+    public String getLoginPage() {
+        return this.loginPage;
     }
 }

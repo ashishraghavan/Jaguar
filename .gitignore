@@ -27,6 +27,7 @@ hs_err_pid*
 .idea/
 Jaguar.iml
 chat/chat.iml
+object-model/object-model.imlo
 chat/src/
 chat/target/
 client-api/src/main/java/com/jaguar/client/

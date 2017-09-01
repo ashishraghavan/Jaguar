@@ -1,10 +1,11 @@
 package com.jaguar.om;
 
 
+import java.security.Principal;
 import java.util.Date;
 import java.util.Set;
 
-public interface IUser extends ICommonObject {
+public interface IUser extends ICommonObject,Principal {
     String getName();
     void setName(String name);
     String getFirstName();

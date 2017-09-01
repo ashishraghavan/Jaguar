@@ -24,7 +24,8 @@ public class ErrorMessage {
         NULL_OBJECT_FROM_QUERY(5),
         COOKIE_NOT_VALID(6),
         FREE_FORM(7),
-        NOT_FOUND(8);
+        NOT_FOUND(8),
+        INVALID_SESSION(9);
 
         private Integer argumentCode;
         ErrorCode(final Integer argumentCode) {
@@ -49,6 +50,7 @@ public class ErrorMessage {
             .put(ErrorCode.COOKIE_NOT_VALID.argumentCode,"Invalid cookie. Please re-verify and try again")
             .put(ErrorCode.FREE_FORM.argumentCode,"%s")
             .put(ErrorCode.NOT_FOUND.argumentCode,"%s was not found on this system")
+            .put(ErrorCode.INVALID_SESSION.argumentCode,"%s has an invalid session. Please re-validate")
             .build();
     /**
      * Try getting the error message from

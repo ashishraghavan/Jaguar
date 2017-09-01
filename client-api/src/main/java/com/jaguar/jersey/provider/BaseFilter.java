@@ -2,14 +2,13 @@ package com.jaguar.jersey.provider;
 
 
 import com.jaguar.cache.ICacheManager;
+import com.jaguar.om.CommonConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BaseFilter {
+public class BaseFilter extends CommonConstants {
     private ICacheManager cacheManager;
-    protected static final String AUTHORIZATION = "Authorization";
-
 
     @Autowired
     public void setCacheManager(final ICacheManager cacheManager) {

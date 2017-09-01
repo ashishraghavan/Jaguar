@@ -27,4 +27,7 @@ public interface IApplication extends ICommonObject {
     //The type of this application - web or mobile application
     ApplicationType getApplicationType();
     void setApplicationType(final ApplicationType applicationType);
+    //The login display page to be shown. THis needs to be strictly a link
+    void setLoginPage(final String uri);
+    String getLoginPage();
 }

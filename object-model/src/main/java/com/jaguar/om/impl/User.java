@@ -1,6 +1,7 @@
 package com.jaguar.om.impl;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.IAccount;
 import com.jaguar.om.IDevice;
 import com.jaguar.om.IUser;
@@ -12,13 +13,14 @@ import org.hibernate.annotations.ForeignKey;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
+import java.security.Principal;
 import java.util.Date;
 import java.util.Set;
 
 @Entity
 @Table(name = "jaguar_user",uniqueConstraints = {@UniqueConstraint(columnNames = {"account_id","email"})})
 @AttributeOverride(name = "id",column = @Column(name = "user_id"))
-public class User extends CommonObject implements IUser{
+public class User extends CommonObject implements IUser,Principal{
 
     public User() {}
 
@@ -51,6 +53,7 @@ public class User extends CommonObject implements IUser{
     private String lastName;
 
 
+    @JsonIgnore
     @Column(name = "password",nullable = false,insertable = true,updatable = true,length = 100)
     private String password;
 
@@ -69,6 +72,7 @@ public class User extends CommonObject implements IUser{
     @Column(name = "phone_number",nullable = true, insertable = true,updatable = true)
     private String phoneNumber;
 
+    @JsonIgnore
     @OneToMany(targetEntity = Device.class,cascade = CascadeType.ALL,fetch = FetchType.LAZY,mappedBy = "user",orphanRemoval = true)
     @LazyCollection(LazyCollectionOption.EXTRA)
     private Set<IDevice> devices;

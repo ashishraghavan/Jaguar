@@ -1,6 +1,8 @@
 package com.jaguar.service;
 
+import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
+import com.jaguar.om.IApplication;
 import com.jaguar.om.IUserApplication;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.ApplicationRole;
@@ -11,18 +13,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
 @Component
 @Path("/oauth")
-public class OAuth2Service {
+public class OAuth2Service extends CommonService {
 
     /**
      * The main authorization endpoint accessed by
@@ -32,12 +33,17 @@ public class OAuth2Service {
      * client_id = is the one when an application registers. See {@link Application#clientId}
      * redirect_uri = is the one when an application registers. See {@link Application#redirectUri}
      * scope = are the roles that the application can request. See {@link ApplicationRole}
+     * This request does not have the annotation of @PermitAll because the user needs to
+     * be logged in when this call is made. If not, a 401 will be sent before the request
+     * reaches this method. When the client receives a 401, it understands that a token
+     * is not available and therefore re-directs the user to login.
      */
     @Path("/authorize")
+    @GET
+    @PermitAll
     @Transactional(readOnly = true)
     @Produces(MediaType.APPLICATION_JSON)
-    @PermitAll
-    public Response authorize(@QueryParam("response_type") final String responseType,
+    public Response authorize(final ContainerRequestContext requestContext,@QueryParam("response_type") final String responseType,
                           @QueryParam("client_id") final String clientId,
                           @QueryParam("redirect_uri") final String redirectUri,
                           @QueryParam("scope") final String scope) {
@@ -66,16 +72,33 @@ public class OAuth2Service {
                     .build();
         }
 
+        if(getAuthTokenFromHeaders(requestContext.getHeaderString(AUTHORIZATION)) == null) {
+            try {
+                //redirect to login page.
+                IApplication application = new Application(Integer.parseInt(clientId));
+                application = getDao().loadSingleFiltered(application,null,false);
+                return Response.temporaryRedirect(URI.create(application.getLoginPage())).build();
+            } catch (Exception e) {
+                serviceLogger.error("An error occurred while re-directing to the login page with the message "+e.getLocalizedMessage());
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.FREE_FORM.getArgumentCode())
+                                .withMessage("An internal server error occurred while re-directing to the login page").build()).build();
+            }
+        }
+
+        //Send the options that the user can see after the login page.
+
         //If at this point, the user as already logged in, we send a response ok indicating
         //that the front-end should show the options of "Allow application to give so and so
         //access" or "Deny request". Depending on whether this user has already given this
-        //particular application
+        //particular application. If not, we have two options. 1) Sen
 
         //We might have to query the UserApplication table to see
         //scope is not a required parameter for this request.
         return Response.ok().build();
     }
 
+    @Path("/update")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional(readOnly = false)

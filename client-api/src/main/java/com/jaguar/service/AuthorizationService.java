@@ -1,6 +1,5 @@
 package com.jaguar.service;
 
-import com.google.gson.Gson;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.*;
@@ -163,11 +162,15 @@ public class AuthorizationService extends CommonService {
             final String refreshToken = UUID.randomUUID().toString();
             getCacheManager().getRefreshTokenCache().put(refreshToken,user);
             getCacheManager().getUserApplicationCache().put(user,application);
-            final Map<String,Object> resultMap = ImmutableMap.<String,Object>builder().put("user",user).put("access_token",token).put("refresh_token",refreshToken).build();
+            final Map<String,Object> resultMap = ImmutableMap.<String,Object>builder()
+                    .put("user",user)
+                    .put("access_token",token)
+                    .put("refresh_token",refreshToken)
+                    .build();
             return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultMap)).build();
         } catch (Exception e) {
             authorizationServiceLogger.error("Error invoking the service login with error message " + e.getLocalizedMessage());
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(new Gson().toJson(e)).build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(wrapExceptionForEntity(e)).build();
         }
     }
 

@@ -7,6 +7,8 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 public class ExceptionMain {
+
+    /*f*/
     public static void main(String[] args) throws Exception {
         final String currentTime = String.valueOf(System.currentTimeMillis());
         System.out.println(currentTime);

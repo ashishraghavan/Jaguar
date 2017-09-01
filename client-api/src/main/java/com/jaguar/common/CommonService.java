@@ -5,13 +5,16 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.jaguar.cache.ICacheManager;
+import com.jaguar.exception.ErrorMessage;
+import com.jaguar.om.CommonConstants;
 import com.jaguar.om.IBaseDAO;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.testng.util.Strings;
 
 @Component
-public class CommonService {
+public class CommonService extends CommonConstants {
     protected final Logger serviceLogger = Logger.getRootLogger();
     protected IBaseDAO dao;
     //Create a GSON object so that we don't keep re-creating a new GSON object in sub classes.
@@ -42,5 +45,34 @@ public class CommonService {
 
     protected ICacheManager getCacheManager() {
         return cacheManager;
+    }
+
+    protected String wrapExceptionForEntity(final Exception exception) {
+        final String errorMessage = "An unknown error occurred";
+        try {
+            if(exception == null || Strings.isNullOrEmpty(exception.getMessage())) {
+                serviceLogger.error("Couldn't build an entity out of a null exception object");
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.ErrorCode.FREE_FORM.getArgumentCode()).withMessage(errorMessage).build());
+            }
+            return exception.getLocalizedMessage();
+        } catch (Exception e) {
+            serviceLogger.error("An exception occurred while sending exception details!");
+            return errorMessage;
+        }
+    }
+
+    protected String getAuthTokenFromHeaders(final String authValue) {
+        if(Strings.isNullOrEmpty(authValue)) {
+            serviceLogger.error("Auth token was null for this request");
+            return null;
+        }
+        //Bearer 3456.....
+        final String[] authTokenized = authValue.trim().split(" ");
+        if(authTokenized.length != 2) {
+            serviceLogger.error("Auth token is not of the correct format. Expected header string to be Authorization:Bearer xxxx-xxxx-xxxx-xxxx, but found "+ authValue);
+            return null;
+        }
+        return authTokenized[1];
     }
 }

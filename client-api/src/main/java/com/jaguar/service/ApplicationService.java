@@ -1,10 +1,15 @@
 package com.jaguar.service;
 
 
+import com.beust.jcommander.internal.Sets;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
+import com.jaguar.jersey.provider.JaguarSecurityContext;
 import com.jaguar.om.IApplication;
+import com.jaguar.om.IApplicationRole;
+import com.jaguar.om.IUser;
 import com.jaguar.om.impl.Application;
+import com.jaguar.om.impl.ApplicationRole;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
@@ -20,7 +25,10 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.*;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Path("/apps")
 @Component
@@ -149,6 +157,33 @@ public class ApplicationService extends CommonService {
             return Response.ok().build();
         }
         return Response.status(HttpStatus.BAD_REQUEST.value()).entity("Invalid app session. Please re-verify").build();
+    }
+
+    @Path("/roles")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Transactional(readOnly = true)
+    public Response getApplicationRoles(final @Context JaguarSecurityContext securityContext) {
+        final IUser currentUser = (IUser)securityContext.getUserPrincipal();
+        final IApplication application = getCacheManager().getUserApplicationCache().getIfPresent(currentUser);
+        if(application == null) {
+            return Response.status(HttpStatus.UNAUTHORIZED.value())
+                    .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.INVALID_SESSION.getArgumentCode())
+                            .withMessage(currentUser.getName()).build()).build();
+        }
+        try {
+            final IApplicationRole applicationRole = new ApplicationRole(application);
+            final List<IApplicationRole> applicationRoleList = getDao().loadFiltered(applicationRole,false);
+            if(applicationRoleList == null || applicationRoleList.isEmpty()) {
+                return Response.status(HttpStatus.NO_CONTENT.value()).build();
+            }
+            final Set<String> roles = Sets.newHashSet();
+            roles.addAll(applicationRoleList.stream().map(appRole -> appRole.getRole().getName()).collect(Collectors.toList()));
+            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(roles)).build();
+        } catch (Exception e) {
+            appServiceLogger.error("An exception occurred in the call getApplicationRoles(final @Context JaguarSecurityContext securityContext) with message "+e.getLocalizedMessage());
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(wrapExceptionForEntity(e)).build();
+        }
     }
 
     /**
