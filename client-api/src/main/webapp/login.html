@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <style>
@@ -57,21 +58,96 @@
 </style>
 <body>
 
+<script type="text/javascript">
+    function checkform() {
+        var f = document.forms["authentication_form"].elements;
+        var canSubmit = true;
+
+        for (var i = 0; i < f.length; i++) {
+            if (f[i].value.length === 0) {
+                canSubmit = false;
+            }
+        }
+
+        if (canSubmit) {
+            document.getElementById("submit_for_authorization").disabled = !canSubmit;
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    function getUrlParameter(queryKey) {
+        var pageUrl = window.location.search.substring(1);
+        var token = pageUrl.split('&');
+        for (var i = 0; i < token.length; i++) {
+            var tokenKeyArray = token[i].split('=');
+            if (tokenKeyArray[0] === queryKey) {
+                return tokenKeyArray[1];
+            }
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    function submitForAuthorizationCode() {
+        var username = document.getElementById('username').value;
+        var password = document.getElementById('password').value;
+        var oauth2_flow = getUrlParameter("oauth2_flow");
+        var redirect_uri = getUrlParameter("redirect_uri");
+        var clientId = getUrlParameter("clientId");
+        var deviceUid;
+        var ipAddressUrl = location.protocol + "//" + location.hostname + (location.port ? ':' + location.port : '') +
+            "/" + "api/version/ip" + "?" + "client_id=" + clientId;
+        var authenticationServiceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
+            "/" + "api/authorize/login";
+        var httpRequest = new XMLHttpRequest();
+        httpRequest.open('GET', ipAddressUrl, true);
+        var consentHttpRequest = new XMLHttpRequest();
+        consentHttpRequest.onreadystatechange = function () {
+            if(consentHttpRequest.readyState === XMLHttpRequest.DONE) {
+                   if(consentHttpRequest.status !== 200) {
+                        console.log('Authentication failed!');
+                        alert("Invalid credentials");
+                   }
+            }
+        };
+        httpRequest.onreadystatechange = function () {
+            //process response here.
+            if(httpRequest.readyState === XMLHttpRequest.DONE) {
+                //TODO Do validation of the ip address before using it as the device id/machine name.
+                deviceUid = httpRequest.responseText;
+                consentHttpRequest.open('POST',authenticationServiceUrl,true);
+                //set all post parameters.
+                var formData = new FormData();
+                formData.set('username',username);
+                formData.set('password',password);
+                formData.set('auth_flow',oauth2_flow);
+                formData.set('redirect_uri',redirect_uri);
+                formData.set('client_id',clientId);
+                formData.set('device_uid',deviceUid);
+                consentHttpRequest.send(formData);
+            }
+        };
+        httpRequest.send();
+        //Get the client id,redirect_uri, the flag oauth_flow from the request URL.
+        //Send all these flags to the /api/
+    }
+</script>
+
 <h2>Login Form</h2>
 
-<form action="/api/token">
-    <div class="imgcontainer">
+<form name="authentication_form">
+    <div class="imgcontainer">                                                                             
         <img src="img_avatar2.png" alt="Avatar" class="avatar">
     </div>
     <div class="container">
         <label><b>Username</b></label>
-        <input type="text" placeholder="Enter Username" name="uname" required>
+        <input id="username" type="text" onkeyup="checkform()" placeholder="Enter Username" name="username" required>
 
         <label><b>Password</b></label>
-        <input type="password" placeholder="Enter Password" name="psw" required>
+        <input id="password" type="password" onkeyup="checkform()" placeholder="Enter Password" name="password" required>
 
-        <button type="submit">Login</button>
-        <input type="checkbox" checked="checked"> Remember me
+        <button id="submit_for_authorization" type="button" disabled="disabled" name = "submit_auth_button" value="Submit" onClick="submitForAuthorizationCode()">Submit</button>
     </div>
 
     <div class="container" style="background-color:#f1f1f1">
@@ -80,4 +156,3 @@
 </form>
 
 </body>
-</html>

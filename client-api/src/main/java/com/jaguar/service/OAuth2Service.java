@@ -157,7 +157,7 @@ public class OAuth2Service extends CommonService {
 
         final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
         //If end user is not already authenticated
-        final String authQueryParams = "?" + REDIRECT_URI + "=" + redirectUri + "&" + OAUTH2_FLOW + "=" + "true";
+        final String authQueryParams = "?" + REDIRECT_URI + "=" + redirectUri + "&" + OAUTH2_FLOW + "=" + "true" +  "&" + CLIENT_ID + "=" +clientId;
         if(isAuthenticationRequired || Strings.isNullOrEmpty(authToken)) {
             final URI loginUri;
             try {

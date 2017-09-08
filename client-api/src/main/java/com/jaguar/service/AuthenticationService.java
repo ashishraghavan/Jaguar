@@ -5,9 +5,11 @@ import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.*;
 import com.jaguar.om.common.EmailManager;
 import com.jaguar.om.common.SMSManager;
+import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.Device;
 import com.jaguar.om.impl.DeviceUser;
 import com.jaguar.om.impl.User;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.http.HttpStatus;
@@ -16,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
-import javax.ws.rs.CookieParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -53,14 +54,14 @@ public class AuthenticationService extends CommonService {
     @Path("/login")
     @POST
     @PermitAll
-    @Transactional(readOnly = false)
+    @Transactional
     public Response login(@Context final ContainerRequestContext requestContext,
                           @FormDataParam("username") final String username,
                           @FormDataParam("password") final String password,
                           @FormDataParam("device_uid") final String deviceId,
                           @FormDataParam("auth_flow") final String isAuthFlow,
                           @FormDataParam("redirect_uri") final String redirectUri,
-                          @CookieParam(APP_COOKIE_NAME) final String appCookie) {
+                          @FormDataParam("client_id") final String clientIdStr) {
         if (Strings.isNullOrEmpty(username)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -77,16 +78,33 @@ public class AuthenticationService extends CommonService {
                     .build();
         }
 
-        if (Strings.isNullOrEmpty(appCookie)) {
+
+        if(Strings.isNullOrEmpty(clientIdStr)) {
+            serviceLogger.error("The client id is needed for the login operation");
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
-                    .withMessage(APP_COOKIE_NAME).build()).build();
+                    .withMessage("client_id").build()).build();
         }
 
+        if(!NumberUtils.isCreatable(clientIdStr)) {
+            serviceLogger.error("The client id "+clientIdStr+" is not a number");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INVALID_ARGUMENT)
+                    .withMessage("client_id","Integer(123...").build()).build();
+        }
         //Get the client id from from the verification cookie.
         //Check if the cookie is still valid.
+        final int clientId = Integer.parseInt(clientIdStr);
+        IApplication application = new Application(clientId);
+        try {
+            application = getDao().loadSingleFiltered(application,null,false);
+        } catch (Exception e) {
+            serviceLogger.error("An exception occurred while querying for the application with client id "+clientId);
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR)
+                    .withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
+        }
 
-        IApplication application = getCacheManager().getAppCache().getIfPresent(appCookie);
         if (application == null) {
             //The cookie entered was invalid.
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
@@ -175,7 +193,13 @@ public class AuthenticationService extends CommonService {
                 //Create the authorization code.
                 final String authorizationCode = UUID.randomUUID().toString();
                 getCacheManager().getUserAuthorizationCache().put(user,authorizationCode);
-                final URI baseUri = URI.create(redirectUri + "&" + AUTHORIZATION_CODE + "=" +authorizationCode);
+                final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
+                final String authQueryParams = "?"
+                        + REDIRECT_URI + "=" + redirectUri
+                        + "&" + OAUTH2_FLOW + "=" +isAuthFlow
+                        + "&" + CLIENT_ID + "=" +clientId
+                        + "&" + AUTHORIZATION_CODE + "=" +authorizationCode;
+                final URI baseUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
                 return Response.temporaryRedirect(baseUri).location(baseUri).build();
             }
 
@@ -202,7 +226,7 @@ public class AuthenticationService extends CommonService {
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @Transactional(readOnly = false)
+    @Transactional
     @PermitAll
     public Response registerUser(final @FormDataParam("username") String username,
                                  final @FormDataParam("password") String password,

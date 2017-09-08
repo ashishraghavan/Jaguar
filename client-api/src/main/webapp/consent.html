@@ -56,24 +56,26 @@ img.avatar {
 .container {
     padding: 16px;
 }
-
-span.psw {
-    float: right;
-    padding-top: 16px;
-}
-
-/* Change styles for span and cancel button on extra small screens */
-@media screen and (max-width: 300px) {
-    span.psw {
-       display: block;
-       float: none;
-    }
-    .cancelbtn {
-       width: 100%;
-    }
-}
 </style>
 
+<script type="text/javascript">
+    $( document ).ready(function() {
+        $("#confirm").click(function() {
+            submitDecision('confirm');
+        });
+        $("#deny").click(function() {
+            submitDecision('deny');
+        });
+        function submitDecision(decision) {
+            alert(decision);
+            if (decision === 'confirm') {
+                alert('You confirmed :)');
+            } else if (decision === 'deny') {
+                alert('You denied :(');
+            }
+        }
+    });
+</script>
 
 <h2>Confirmation</h2>
 <body>  
@@ -86,7 +88,6 @@ span.psw {
   </div>
 
 </body>
-<script src="confirmation.js"></script>
 <script
         src="https://code.jquery.com/jquery-3.2.1.js"
         integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
