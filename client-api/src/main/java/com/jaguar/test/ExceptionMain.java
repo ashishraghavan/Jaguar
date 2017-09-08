@@ -12,8 +12,8 @@ public class ExceptionMain {
     public static void main(String[] args) throws Exception {
         final String currentTime = String.valueOf(System.currentTimeMillis());
         System.out.println(currentTime);
-        final Integer clientId = 2190832;
-        final String secret = "7a5e9fc6-290b-4c97-8386-67237414f469";
+        final Integer clientId = 1095369;
+        final String secret = "f6b2d7a9-ec5e-496e-9155-2b5127e38db5";
 
         final Mac hmac = Mac.getInstance("HmacSHA256");
         final SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(),"HmacSHA256");

@@ -6,13 +6,11 @@ import com.jaguar.om.IAccount;
 import com.jaguar.om.IDevice;
 import com.jaguar.om.IUser;
 import org.apache.commons.codec.digest.DigestUtils;
-
-
-import javax.persistence.*;
 import org.hibernate.annotations.ForeignKey;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
+import javax.persistence.*;
 import java.security.Principal;
 import java.util.Date;
 import java.util.Set;

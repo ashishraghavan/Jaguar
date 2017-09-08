@@ -12,4 +12,6 @@ public interface ICacheManager {
     Cache<String,IUser> getTokenCache();
     //Refresh token cache.
     Cache<String,IUser> getRefreshTokenCache();
+    //Cache for authorization flow
+    Cache<IUser,String> getUserAuthorizationCache();
 }

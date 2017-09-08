@@ -1,5 +1,6 @@
 package com.jaguar.om.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.IAccount;
 import com.jaguar.om.IApplication;
 import com.jaguar.om.IApplicationRole;
@@ -7,6 +8,7 @@ import com.jaguar.om.common.Utils;
 import com.jaguar.om.enums.ApplicationType;
 import org.apache.log4j.Logger;
 import org.hibernate.annotations.ForeignKey;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
 import java.net.URI;
@@ -48,10 +50,12 @@ public class Application extends CommonObject implements IApplication{
     @Enumerated(EnumType.STRING)
     private ApplicationType applicationType;
 
-    @Column(name = "login_page",nullable = false,insertable = true,updatable = true)
+    @Column(name = "login_page",nullable = true,insertable = true,updatable = true)
     private String loginPage;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "application",targetEntity = ApplicationRole.class,fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @org.hibernate.annotations.LazyCollection(LazyCollectionOption.FALSE)
     private Set<IApplicationRole> applicationRoles;
 
 
@@ -112,10 +116,6 @@ public class Application extends CommonObject implements IApplication{
 
     public Set<IApplicationRole> getRoles() {
         return this.applicationRoles;
-    }
-
-    public void setRoles(Set<IApplicationRole> roles) {
-        this.applicationRoles = roles;
     }
 
     public IAccount getAccount() {

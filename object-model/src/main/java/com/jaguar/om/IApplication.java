@@ -15,7 +15,6 @@ public interface IApplication extends ICommonObject {
     String getRedirectURI();
     void setRedirectURI(final String redirectURI);
     Set<IApplicationRole> getRoles();
-    void setRoles(Set<IApplicationRole> roles);
     IAccount getAccount();
     void setAccount(final IAccount account);
     //This corresponds to the bundle version (incremental or not)

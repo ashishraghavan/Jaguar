@@ -20,6 +20,7 @@ public class CacheManager implements ICacheManager {
     private final long USER_APP_DURATION = 1;
     private final long TOKEN_DURATION = 1;
     private final long REFRESH_TOKEN_DURATION = 1;
+    private final long AUTHORIZATION_CODE_DURATION = 10; //minutes
     private final Calendar calendar = Calendar.getInstance();
     //Here key would the app session identifier (random) and value will be the application against which this was obtained.
     protected final Cache<String,IApplication> appSessionCache = CacheBuilder
@@ -31,6 +32,8 @@ public class CacheManager implements ICacheManager {
             .newBuilder().expireAfterWrite(TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
     protected final Cache<String,IUser> refreshTokenCache = CacheBuilder
             .newBuilder().expireAfterWrite(REFRESH_TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
+    protected final Cache<IUser,String> userAuthorizationCache = CacheBuilder
+            .newBuilder().expireAfterWrite(AUTHORIZATION_CODE_DURATION,TimeUnit.MINUTES).recordStats().build();
 
 
     @Override
@@ -51,6 +54,11 @@ public class CacheManager implements ICacheManager {
     @Override
     public Cache<String, IUser> getRefreshTokenCache() {
         return refreshTokenCache;
+    }
+
+    @Override
+    public Cache<IUser, String> getUserAuthorizationCache() {
+        return null;
     }
 
     @SuppressWarnings("unused")

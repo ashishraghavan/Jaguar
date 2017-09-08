@@ -33,3 +33,4 @@ chat/target/
 client-api/src/main/java/com/jaguar/client/
 general-api-developer-guide.pdf
 lib/
+client-api/client-api.iml

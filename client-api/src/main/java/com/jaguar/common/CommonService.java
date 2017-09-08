@@ -21,9 +21,8 @@ public class CommonService extends CommonConstants {
     protected final Gson gson = new Gson();
     protected ICacheManager cacheManager;
     private final String classNameHashCodeTemplate = "Classname/hashcode : %s / %d";
-    protected final String APP_COOKIE_NAME = "jaguar_cookie";
     protected final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false)
-            .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,false).configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE,false);
+            .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,false);
 
     @Autowired
     public void setDao(IBaseDAO dao) {
@@ -53,7 +52,7 @@ public class CommonService extends CommonConstants {
             if(exception == null || Strings.isNullOrEmpty(exception.getMessage())) {
                 serviceLogger.error("Couldn't build an entity out of a null exception object");
                 return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(ErrorMessage.builder()
-                        .withErrorCode(ErrorMessage.ErrorCode.FREE_FORM.getArgumentCode()).withMessage(errorMessage).build());
+                        .withErrorCode(ErrorMessage.FREE_FORM).withMessage(errorMessage).build());
             }
             return exception.getLocalizedMessage();
         } catch (Exception e) {

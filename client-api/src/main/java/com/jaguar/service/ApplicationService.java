@@ -51,6 +51,7 @@ public class ApplicationService extends CommonService {
     @Path("/verify")
     @PermitAll
     @Transactional(readOnly = false)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response verify(final @Context ContainerRequestContext requestContext,
                            final @Context UriInfo uriInfo,
                            @FormDataParam("time") final String currentTime,
@@ -58,7 +59,7 @@ public class ApplicationService extends CommonService {
                            @FormDataParam("hash") final String computedHash) {
         if(Strings.isNullOrEmpty(currentTime)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage("Time")
                     .build())
                     .build();
@@ -66,7 +67,7 @@ public class ApplicationService extends CommonService {
 
         if(Strings.isNullOrEmpty(clientId)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage("Client Id")
                     .build())
                     .build();
@@ -74,7 +75,7 @@ public class ApplicationService extends CommonService {
 
         if(Strings.isNullOrEmpty(computedHash)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage("Computed Hash")
                     .build())
                     .build();
@@ -82,7 +83,7 @@ public class ApplicationService extends CommonService {
 
         if(!NumberUtils.isCreatable(clientId)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.INVALID_ARGUMENT.getArgumentCode())
+                    .withErrorCode(ErrorMessage.INVALID_ARGUMENT)
                     .withMessage("Client Id", "123...9")
                     .build())
                     .build();
@@ -92,10 +93,11 @@ public class ApplicationService extends CommonService {
         //Get the application secret from the application.
         IApplication application = new Application(clientid);
         try {
+            //Ignore the applicationRoles property.
             application = getDao().loadSingleFiltered(application,null,false);
             if(application == null) {
                 return Response.status(HttpStatus.BAD_REQUEST.value())
-                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.NULL_OBJECT_FROM_QUERY.getArgumentCode())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NULL_OBJECT_FROM_QUERY)
                                 .withMessage("application with client id " + clientId)
                                 .build())
                         .build();
@@ -105,7 +107,7 @@ public class ApplicationService extends CommonService {
             //the same as the one computed by us.
             if(!doComputeAndCompare(currentTime,appSecret,computedHash)) {
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                        .withErrorCode(ErrorMessage.ErrorCode.INVALID_HASH.getArgumentCode())
+                        .withErrorCode(ErrorMessage.INVALID_HASH)
                         .withMessage(computedHash)
                         .build())
                         .build();
@@ -113,13 +115,11 @@ public class ApplicationService extends CommonService {
 
             //Create a random app session value.
             final String appCookieSession = UUID.randomUUID().toString();
-            //Get application converted to JSON object
-            final String appGson = gson.toJson(application);
             //Store this cookie session value in an in-memory cache so that
             //during verification, we know that the cookie is coming from the correct client application.
             //If an application is already present with this app session cookie, we overwrite the value since the application
             //might be verifying for a new session.
-            cacheManager.getAppCache().put(appCookieSession,application);
+            getCacheManager().getAppCache().put(appCookieSession,application);
             final NewCookie cookie = new NewCookie(APP_COOKIE_NAME,
                     appCookieSession,
                     uriInfo.getPath(),
@@ -128,14 +128,14 @@ public class ApplicationService extends CommonService {
                     100,
                     false);
             //Add this session somewhere in the in-memory cache.
-            return Response.ok().cookie(cookie).entity(appGson).build();
+            return Response.ok().cookie(cookie).entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(application)).build();
 
         } catch (Exception e) {
             appServiceLogger.error("Failed to query/filter application with error "+e.getLocalizedMessage());
             return Response.status(HttpStatus.BAD_REQUEST.value())
                     .entity(ErrorMessage.builder()
-                            .withErrorCode(ErrorMessage.ErrorCode.EXCEPTION.getArgumentCode())
-                            .withMessage(e.getLocalizedMessage())
+                            .withErrorCode(ErrorMessage.EXCEPTION)
+                            .withMessage(e.getLocalizedMessage()).build()
                     ).build();
         }
     }
@@ -149,10 +149,10 @@ public class ApplicationService extends CommonService {
             appServiceLogger.error("An application session cookie is required for this request");
             return Response.status(HttpStatus.BAD_REQUEST.value())
                     .entity(ErrorMessage.builder()
-                            .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                            .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                             .withMessage("Cookie param "+APP_COOKIE_NAME).build()).build();
         }
-        if(cacheManager.getAppCache().getIfPresent(appSessionCookie) != null) {
+        if(getCacheManager().getAppCache().getIfPresent(appSessionCookie) != null) {
             //This session is still valid.
             return Response.ok().build();
         }
@@ -168,7 +168,7 @@ public class ApplicationService extends CommonService {
         final IApplication application = getCacheManager().getUserApplicationCache().getIfPresent(currentUser);
         if(application == null) {
             return Response.status(HttpStatus.UNAUTHORIZED.value())
-                    .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.INVALID_SESSION.getArgumentCode())
+                    .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INVALID_SESSION)
                             .withMessage(currentUser.getName()).build()).build();
         }
         try {

@@ -8,7 +8,6 @@ import com.jaguar.om.common.SMSManager;
 import com.jaguar.om.impl.Device;
 import com.jaguar.om.impl.DeviceUser;
 import com.jaguar.om.impl.User;
-import jersey.repackaged.com.google.common.collect.ImmutableMap;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.http.HttpStatus;
@@ -21,9 +20,11 @@ import javax.ws.rs.CookieParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Map;
+import java.net.URI;
 import java.util.UUID;
 
 /**
@@ -33,9 +34,9 @@ import java.util.UUID;
 
 @Component
 @Path("/authorize")
-public class AuthorizationService extends CommonService {
+public class AuthenticationService extends CommonService {
 
-    private static final Logger authorizationServiceLogger = Logger.getLogger(AuthorizationService.class.getSimpleName());
+    private static final Logger authorizationServiceLogger = Logger.getLogger(AuthenticationService.class.getSimpleName());
 
     /**
      * Does user login
@@ -53,13 +54,16 @@ public class AuthorizationService extends CommonService {
     @POST
     @PermitAll
     @Transactional(readOnly = false)
-    public Response login(@FormDataParam("username") final String username,
+    public Response login(@Context final ContainerRequestContext requestContext,
+                          @FormDataParam("username") final String username,
                           @FormDataParam("password") final String password,
                           @FormDataParam("device_uid") final String deviceId,
+                          @FormDataParam("auth_flow") final String isAuthFlow,
+                          @FormDataParam("redirect_uri") final String redirectUri,
                           @CookieParam(APP_COOKIE_NAME) final String appCookie) {
         if (Strings.isNullOrEmpty(username)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage("Username")
                     .build())
                     .build();
@@ -67,7 +71,7 @@ public class AuthorizationService extends CommonService {
 
         if (Strings.isNullOrEmpty(password)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage("Password")
                     .build())
                     .build();
@@ -75,7 +79,7 @@ public class AuthorizationService extends CommonService {
 
         if (Strings.isNullOrEmpty(appCookie)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage(APP_COOKIE_NAME).build()).build();
         }
 
@@ -86,7 +90,7 @@ public class AuthorizationService extends CommonService {
         if (application == null) {
             //The cookie entered was invalid.
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.ErrorCode.COOKIE_NOT_VALID.getArgumentCode()).build()).build();
+                    .withErrorCode(ErrorMessage.COOKIE_NOT_VALID).build()).build();
         }
         try {
             application = getDao().load(application.getClass(), application.getId());
@@ -94,7 +98,7 @@ public class AuthorizationService extends CommonService {
             //supplied, it is an error.
             if (Strings.isNullOrEmpty(deviceId)) {
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                        .withErrorCode(ErrorMessage.ErrorCode.ARGUMENT_REQUIRED.getArgumentCode())
+                        .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                         .withMessage("device_uid")
                         .build())
                         .build();
@@ -107,7 +111,7 @@ public class AuthorizationService extends CommonService {
                 //using a different device, or this user hasn't registered yet.
                 //Since the device is null, this device is non-existent.
                 return Response.status(HttpStatus.BAD_REQUEST.value()).
-                        entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.EXCEPTION.getArgumentCode())
+                        entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
                                 .withMessage("The device " + deviceId + " doesn't seem to be a valid device").build()).build();
             }
             //Get the user now.
@@ -116,7 +120,7 @@ public class AuthorizationService extends CommonService {
             if (user == null) {
                 //We did not find this user under this account.
                 return Response.status(HttpStatus.BAD_REQUEST.value())
-                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.NOT_FOUND.getArgumentCode())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND)
                                 .withMessage("The device with id " + deviceId).build()).build();
             }
             //Check the UserDevice table to see if we find a correct user -> device match.
@@ -151,23 +155,32 @@ public class AuthorizationService extends CommonService {
             user = getDao().loadSingleFiltered(user,null,false);
             if(user == null) {
                 return Response.status(HttpStatus.BAD_REQUEST.value())
-                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.NOT_FOUND.getArgumentCode())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND)
                                 .withMessage("The user " + username + " with the given password does not exist on this system").build()).build();
             }
 
-            //Create a token
-            final String token = UUID.randomUUID().toString();
-            getCacheManager().getTokenCache().put(token,user);
-            //Create refresh token
-            final String refreshToken = UUID.randomUUID().toString();
-            getCacheManager().getRefreshTokenCache().put(refreshToken,user);
-            getCacheManager().getUserApplicationCache().put(user,application);
-            final Map<String,Object> resultMap = ImmutableMap.<String,Object>builder()
-                    .put("user",user)
-                    .put("access_token",token)
-                    .put("refresh_token",refreshToken)
-                    .build();
-            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultMap)).build();
+            boolean isConsentFlow = false;
+            if(!Strings.isNullOrEmpty(isAuthFlow)) {
+                isConsentFlow = Boolean.parseBoolean(isAuthFlow);
+            }
+
+            //If this is the authorization flow (consent), we send the user to the redirection URI
+            //with the authorization code appended to the URI.
+            if(isConsentFlow) {
+                //We need the re-redirect URI for this case.
+                if(Strings.isNullOrEmpty(redirectUri)) {
+                    return Response.status(HttpStatus.BAD_REQUEST.value())
+                            .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("Redirect URI").build()).build();
+                }
+                //Create the authorization code.
+                final String authorizationCode = UUID.randomUUID().toString();
+                getCacheManager().getUserAuthorizationCache().put(user,authorizationCode);
+                final URI baseUri = URI.create(redirectUri + "&" + AUTHORIZATION_CODE + "=" +authorizationCode);
+                return Response.temporaryRedirect(baseUri).location(baseUri).build();
+            }
+
+            //Just send an ok message
+            return Response.ok().build();
         } catch (Exception e) {
             authorizationServiceLogger.error("Error invoking the service login with error message " + e.getLocalizedMessage());
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(wrapExceptionForEntity(e)).build();

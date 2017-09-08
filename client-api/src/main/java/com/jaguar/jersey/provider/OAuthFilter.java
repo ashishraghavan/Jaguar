@@ -11,10 +11,12 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Map;
 
 @Provider
 public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
@@ -29,6 +31,13 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
             if(resourceMethod.getAnnotation(PermitAll.class) == null) {
                 //If this method does not contai the PermitAll annotation
                 //we need to look for the Access token.
+                //First check if the jaguar_cookie is present
+                final Map<String,Cookie> cookieMap =  requestContext.getCookies();
+                if(!cookieMap.containsKey(APP_COOKIE_NAME)) {
+                    filterLogger.error("The resource method "+resourceMethod.getName()+" does not have a @PermitAll annotation. App session cookie is needed for all these requests. " +
+                            "the map obtained was "+cookieMap);
+                    requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).entity("The app session cookie is expected for this request").build());
+                }
                 final String authorization = requestContext.getHeaderString(AUTHORIZATION);
                 if(Strings.isNullOrEmpty(authorization)) {
                     requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).build());
@@ -37,7 +46,7 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
                 final String[] authTokenized = authorization.trim().split(" ");
                 if(authTokenized.length != 2) {
                    requestContext.abortWith(Response.status(HttpStatus.BAD_REQUEST.value())
-                           .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ErrorCode.FREE_FORM.getArgumentCode())
+                           .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.FREE_FORM)
                                    .withMessage("The access token is expected to be of the format Bearer token").build()).build());
                 }
                 final String authToken = authTokenized[1];

@@ -16,41 +16,36 @@ public class ErrorMessage {
     private static final Logger logger = Logger.getLogger(ErrorMessage.class.getSimpleName());
     private static final Gson gson = new Gson();
 
-    public enum ErrorCode {
-        ARGUMENT_REQUIRED(1),
-        INVALID_ARGUMENT(2),
-        EXCEPTION(3),
-        INVALID_HASH(4),
-        NULL_OBJECT_FROM_QUERY(5),
-        COOKIE_NOT_VALID(6),
-        FREE_FORM(7),
-        NOT_FOUND(8),
-        INVALID_SESSION(9);
-
-        private Integer argumentCode;
-        ErrorCode(final Integer argumentCode) {
-            this.argumentCode = argumentCode;
-        }
-        public Integer getArgumentCode() {
-            return this.argumentCode;
-        }
-    }
+    /* Error code declaration */
+    public static final int ARGUMENT_REQUIRED = 1;
+    public static final int INVALID_ARGUMENT = 2;
+    public static final int EXCEPTION = 3;
+    public static final int INVALID_HASH = 4;
+    public static final int NULL_OBJECT_FROM_QUERY = 5;
+    public static final int COOKIE_NOT_VALID = 6;
+    public static final int FREE_FORM = 7;
+    public static final int NOT_FOUND = 8;
+    public static final int INVALID_SESSION = 9;
+    public static final int INTERNAL_SERVER_ERROR = 10;
+    public static final int NOT_AUTHORIZED = 11;
 
     public static Builder builder() {
         return new Builder();
     }
 
     private static final Map<Integer,String> errorCodeMap = ImmutableMap.<Integer,String>builder()
-            .put(ErrorCode.ARGUMENT_REQUIRED.argumentCode,"Argument %s is required for this request")
-            .put(ErrorCode.INVALID_ARGUMENT.argumentCode,"Argument %s is not in the correct format. Expected format is %s")
-            .put(ErrorCode.EXCEPTION.argumentCode,"An error occurred with message %s")
+            .put(ARGUMENT_REQUIRED,"Argument %s is required for this request")
+            .put(INVALID_ARGUMENT,"Argument %s is not in the correct format. Expected format is %s")
+            .put(EXCEPTION,"An error occurred with message %s")
             //Do not send the value of the correct hash here! The first string argument is the hash sent by the client.
-            .put(ErrorCode.INVALID_HASH.argumentCode,"The computed hash %s is incorrect.")
-            .put(ErrorCode.NULL_OBJECT_FROM_QUERY.argumentCode,"The query for %s returned empty.")
-            .put(ErrorCode.COOKIE_NOT_VALID.argumentCode,"Invalid cookie. Please re-verify and try again")
-            .put(ErrorCode.FREE_FORM.argumentCode,"%s")
-            .put(ErrorCode.NOT_FOUND.argumentCode,"%s was not found on this system")
-            .put(ErrorCode.INVALID_SESSION.argumentCode,"%s has an invalid session. Please re-validate")
+            .put(INVALID_HASH,"The computed hash %s is incorrect.")
+            .put(NULL_OBJECT_FROM_QUERY,"The query for %s returned empty.")
+            .put(COOKIE_NOT_VALID,"Invalid cookie. Please re-verify and try again")
+            .put(FREE_FORM,"%s")
+            .put(NOT_FOUND,"%s was not found on this system")
+            .put(INVALID_SESSION,"%s has an invalid session. Please re-validate")
+            .put(INTERNAL_SERVER_ERROR,"An error occurred while processing this request")
+            .put(NOT_AUTHORIZED,"Authentication is required for this request")
             .build();
     /**
      * Try getting the error message from
