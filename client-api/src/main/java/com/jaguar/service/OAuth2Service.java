@@ -19,11 +19,12 @@ import javax.annotation.security.PermitAll;
 import javax.servlet.ServletContext;
 import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,16 +81,6 @@ public class OAuth2Service extends CommonService {
                     .withMessage("Redirect URI")
                     .build())
                     .build();
-        }
-
-        final Map<String,Cookie> cookieMap = requestContext.getCookies();
-        if(cookieMap == null ||
-                cookieMap.isEmpty() ||
-                !cookieMap.containsKey(APP_COOKIE_NAME) ||
-                cookieMap.get(APP_COOKIE_NAME) == null) {
-            return Response.status(HttpStatus.BAD_REQUEST.value())
-                    .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INVALID_SESSION)
-                            .withMessage("The current user").build()).build();
         }
         //We need to make sure the application is a valid one.
         IApplication application;
@@ -164,6 +155,7 @@ public class OAuth2Service extends CommonService {
             }
         }
 
+        final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
         //If end user is not already authenticated
         final String authQueryParams = "?" + REDIRECT_URI + "=" + redirectUri + "&" + OAUTH2_FLOW + "=" + "true";
         if(isAuthenticationRequired || Strings.isNullOrEmpty(authToken)) {
@@ -177,7 +169,7 @@ public class OAuth2Service extends CommonService {
                 //must be sent the role list as in the code block below.
                 //Append the re-direct URI along with the login url.
                 //We don't allow custom login pages. It has to be a login page that we serve.
-                loginUri = URI.create(requestContext.getUriInfo().getBaseUri() + "/login.html" + authQueryParams);
+                loginUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "login.html" + authQueryParams);
                 return Response.temporaryRedirect(loginUri).location(loginUri).build();
             } catch (Exception e) {
                 serviceLogger.error("An error occurred while re-directing to the login page with the message "+e.getLocalizedMessage());
@@ -188,15 +180,14 @@ public class OAuth2Service extends CommonService {
         }
 
         //Take the user to the consent page since the user has authenticated.
-        //TODO Check if the consent url is malformed.
-        final URI consentUri = URI.create(requestContext.getUriInfo().getBaseUri() + "/consent.html" + authQueryParams);
+        final URI consentUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
         return Response.temporaryRedirect(consentUri).location(consentUri).build();
     }
 
     @Path("/update")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @Transactional(readOnly = false)
+    @Transactional
     public Response updateAuthorization(final @FormDataParam("authorization") String authorization) {
         if(Strings.isNullOrEmpty(authorization)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()

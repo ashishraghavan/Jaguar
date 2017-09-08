@@ -2,41 +2,47 @@ If there was no bi-directional relationship between User and Device, deleting a 
 
 When not using the jersey-spring3 integration dependency, the setter method with @Autowired annotation is not called when a service call is made (annotated with @Component). On adding the jersey-spring3 dependency and excluding a bunch of dependencies causing error, the setter method for dao is called twice in the service class (ApplicationService.java). The first one when the server container is initiliazed, which is normal as the setter injection is used by spring. However, on calling any API (service call), this is one of the major difference : The ApplicationService as initialized by Spring and later on by jersey have different hashcodes. I don't know why would this happen. And if the class has already been loaded once, why would there be a need for Jersey and Spring to load these classes separately? I can understand if the classloader being used for this is different.
 
-Verification API
-curl -v -X POST -F "time=1503372933614" -F "client_id=2190832" -F "hash=H8OA4lOY6VikRxeNbGj9K3amnm1r6zIx7pdBmEl+Sd8=" http://localhost:8080/api/apps/verify
+For running the build.
+mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15" clean install
 
-HTTP/1.1 100 Continue
-HTTP/1.1 200 OK
-Server: Apache-Coyote/1.1
-Set-Cookie: jaguar_cookie=d4262019-cb52-4630-9906-bc9f585a855c;Version=1;Comment="cookie for creating app session";Domain=;Path=apps/verify;Max-Age=100
-Content-Type: text/plain
-Content-Length: 571
-Date: Tue, 22 Aug 2017 04:27:15 GMT
+Only for verification on the mobile application side.
+curl -v -X POST -F "time=1504844512068" -F "client_id=1095369" -F "hash=YwUU8FwVNCquE07ldb2nlXV7fiBWcU8AidvVoRZCk0A=" http://localhost:8080/api/apps/verify
 
-{
-   "account":{
-      "accountName":"Jaguar",
-      "city":"Long Is City",
-      "country":"USA",
-      "state":"NY",
-      "postalCode":"11101",
-      "creationDate":"Aug 15, 2017 6:15:44 PM",
-      "modificationDate":"Aug 15, 2017 6:15:44 PM",
-      "active":true,
-      "id":1
-   },
-   "name":"AppSense",
-   "redirectUri":"http://localhost:8080/api/client",
-   "clientId":2190832,
-   "clientSecret":"5d4b8308-525f-4631-b6ea-55d926a08be3",
-   "versionCode":"1.0",
-   "packageName":"com.jaguar.jaguarxf",
-   "applicationType":"MOBILE_APP",
-   "applicationRoles":[
+Format of cookie.
+jaguar_cookie=619fb794-1f04-440c-9bbf-547a6918a4cb;Version=1;Comment="cookie for creating app session";Domain=;Path=apps/verify;Max-Age=100
 
-   ],
-   "creationDate":"Aug 15, 2017 6:15:44 PM",
-   "modificationDate":"Aug 15, 2017 6:15:44 PM",
-   "active":true,
-   "id":1
+{"account":{"accountName":"Jaguar","city":"Long Is City","country":"USA","state":"NY","postalCode":"11101","creationDate":"Aug 28, 2017 10:24:24 PM","modificationDate":"Aug 28, 2017 10:24:24 PM","active":true,"id":1},"name":"AppSense","redirectUri":"http://localhost:8080/api/client","clientId":1903475,"clientSecret":"7a5e9fc6-290b-4c97-8386-67237414f469","versionCode":"1.0","packageName":"com.jaguar.jaguarxf","applicationType":"MOBILE_APP","applicationRoles":[],"creationDate":"Aug 28, 2017 10:24:24 PM","modificationDate":"Aug 28, 2017 10:24:24 PM","active":true,"id":1}
+
+Request authorization code
+curl -v -L --cookie "jaguar_cookie=9520cd38-2adc-4c89-82e9-a61047a3527f" "http://localhost:8080/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080/api/client&scopeString=seller"
+
+curl -v -X POST --cookie "jaguar_cookie=a17870b6-4d8e-4097-a473-a9aa04f19135" -F "username=ashish.raghavan@google.com" -F "password=12345" -F "device_uid=TXF5143" "http://localhost:8080/api/authorize/login"
+
+{	
+  "access_token" : "40d6b613-e77a-4911-858a-64cf2f02cb63",
+  "refresh_token" : "261316dd-bfe2-4344-a5a4-1d8f5e3fe919",
+  "user" : {
+    "creationDate" : 1503973464581,
+    "modificationDate" : 1503973464581,
+    "active" : true,
+    "id" : 1,
+    "name" : "Ashish Raghavan",
+    "firstName" : "Ashish",
+    "lastName" : "Raghavan",
+    "password" : "9584bd5fad8be2416f26491bc6a7331acbc0e7f3f03bbd0ec4d714042d938dd6",
+    "account" : {
+      "creationDate" : 1503973464407,
+      "modificationDate" : 1503973464407,
+      "active" : true,
+      "id" : 1,
+      "accountName" : "Jaguar",
+      "city" : "Long Is City",
+      "country" : "USA",
+      "state" : "NY",
+      "postalCode" : "11101"
+    },
+    "email" : "ashish.raghavan@google.com",
+    "lastOnline" : null,
+    "phoneNumber" : "4082216275"
+  }
 }
