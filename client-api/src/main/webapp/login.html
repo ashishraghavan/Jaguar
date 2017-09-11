@@ -75,18 +75,8 @@
     }
 </script>
 
-<script type="text/javascript">
-    function getUrlParameter(queryKey) {
-        var pageUrl = window.location.search.substring(1);
-        var token = pageUrl.split('&');
-        for (var i = 0; i < token.length; i++) {
-            var tokenKeyArray = token[i].split('=');
-            if (tokenKeyArray[0] === queryKey) {
-                return tokenKeyArray[1];
-            }
-        }
-    }
-</script>
+<!-- Include the Utils.js script having the function getUrlParameter(..)-->
+<script src="Utils.js" type="text/javascript"></script>
 
 <script type="text/javascript">
     function submitForAuthorizationCode() {
@@ -95,42 +85,45 @@
         var oauth2_flow = getUrlParameter("oauth2_flow");
         var redirect_uri = getUrlParameter("redirect_uri");
         var clientId = getUrlParameter("clientId");
-        var deviceUid;
-        var ipAddressUrl = location.protocol + "//" + location.hostname + (location.port ? ':' + location.port : '') +
-            "/" + "api/version/ip" + "?" + "client_id=" + clientId;
+        var deviceUid = getUrlParameter("device_uid");
         var authenticationServiceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
             "/" + "api/authorize/login";
-        var httpRequest = new XMLHttpRequest();
-        httpRequest.open('GET', ipAddressUrl, true);
-        var consentHttpRequest = new XMLHttpRequest();
-        consentHttpRequest.onreadystatechange = function () {
-            if(consentHttpRequest.readyState === XMLHttpRequest.DONE) {
-                   if(consentHttpRequest.status !== 200) {
-                        console.log('Authentication failed!');
-                        alert("Invalid credentials");
-                   }
+        var loginHttpRequest = new XMLHttpRequest();
+        loginHttpRequest.open('POST',authenticationServiceUrl,true);
+        var formData = new FormData();
+        formData.set('username',username);
+        formData.set('password',password);
+        formData.set('auth_flow',oauth2_flow);
+        formData.set('redirect_uri',redirect_uri);
+        formData.set('client_id',clientId);
+        formData.set('device_uid',deviceUid);
+        loginHttpRequest.onreadystatechange = function () {
+            if(loginHttpRequest.readyState === XMLHttpRequest.DONE) {
+                if(loginHttpRequest.status === 200) {
+                    //We get the location property from the response
+                    //and call that URL instead of re-directing from the server.
+                    var successJSON = JSON.parse(this.responseText);
+                    if(successJSON['Location'] !== '' && successJSON['Location'] !== undefined) {
+                        window.location = successJSON['Location'];
+                    }
+                } else {
+                    //Any other case. The server will re-direct
+                    //the user to the consent.html page after a
+                    //successful authentication.
+                    console.log('Authentication failed with message');
+                    //parse the error JSON.
+                    var errorJSON = JSON.parse(this.responseText);
+                    if(errorJSON['errorMessage'] === '' || errorJSON['errorMessage'] === undefined) {
+                        //We don't know what kind of error happened.
+                        alert('An unknown error occurred while processing the credentials!');
+                    } else {
+                        //Display what error occurred from the server side.
+                        alert(errorJSON['errorMessage']);
+                    }
+                }
             }
         };
-        httpRequest.onreadystatechange = function () {
-            //process response here.
-            if(httpRequest.readyState === XMLHttpRequest.DONE) {
-                //TODO Do validation of the ip address before using it as the device id/machine name.
-                deviceUid = httpRequest.responseText;
-                consentHttpRequest.open('POST',authenticationServiceUrl,true);
-                //set all post parameters.
-                var formData = new FormData();
-                formData.set('username',username);
-                formData.set('password',password);
-                formData.set('auth_flow',oauth2_flow);
-                formData.set('redirect_uri',redirect_uri);
-                formData.set('client_id',clientId);
-                formData.set('device_uid',deviceUid);
-                consentHttpRequest.send(formData);
-            }
-        };
-        httpRequest.send();
-        //Get the client id,redirect_uri, the flag oauth_flow from the request URL.
-        //Send all these flags to the /api/
+        loginHttpRequest.send(formData);
     }
 </script>
 

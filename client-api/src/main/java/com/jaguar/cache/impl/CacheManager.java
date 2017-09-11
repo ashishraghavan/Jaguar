@@ -32,7 +32,7 @@ public class CacheManager implements ICacheManager {
             .newBuilder().expireAfterWrite(TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
     protected final Cache<String,IUser> refreshTokenCache = CacheBuilder
             .newBuilder().expireAfterWrite(REFRESH_TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
-    protected final Cache<IUser,String> userAuthorizationCache = CacheBuilder
+    protected final Cache<String,IUser> userAuthorizationCache = CacheBuilder
             .newBuilder().expireAfterWrite(AUTHORIZATION_CODE_DURATION,TimeUnit.MINUTES).recordStats().build();
 
 
@@ -57,8 +57,8 @@ public class CacheManager implements ICacheManager {
     }
 
     @Override
-    public Cache<IUser, String> getUserAuthorizationCache() {
-        return null;
+    public Cache<String,IUser> getUserAuthorizationCache() {
+        return this.userAuthorizationCache;
     }
 
     @SuppressWarnings("unused")

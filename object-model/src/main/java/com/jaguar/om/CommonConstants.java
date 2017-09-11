@@ -10,6 +10,9 @@ public class CommonConstants {
     protected static final String REDIRECT_URI = "redirect_uri";
     protected static final String AUTHORIZATION_CODE = "authorization_code";
     protected static final String CLIENT_ID = "clientId";
+    protected static final String DEVICE_UID = "device_uid";
+    protected static final String USER = "user";
+    protected static final String ACCOUNT = "account";
 
     //Prompt values for OAUTH2
     protected static final String PROMPT_LOGIN = "login";

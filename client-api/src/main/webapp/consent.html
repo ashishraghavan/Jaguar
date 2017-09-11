@@ -58,23 +58,52 @@ img.avatar {
 }
 </style>
 
+<!-- Include the Utils.js script having the function getUrlParameter(..)-->
+<script src="Utils.js" type="text/javascript"></script>
 <script type="text/javascript">
-    $( document ).ready(function() {
-        $("#confirm").click(function() {
-            submitDecision('confirm');
-        });
-        $("#deny").click(function() {
-            submitDecision('deny');
-        });
-        function submitDecision(decision) {
-            alert(decision);
-            if (decision === 'confirm') {
-                alert('You confirmed :)');
-            } else if (decision === 'deny') {
-                alert('You denied :(');
-            }
+    function submitConsent(consent) {
+        var authorization;
+        if(consent === 'confirm') {
+            authorization = 'AGREE';
+        } else if(consent === 'deny') {
+            authorization = 'DISAGREE';
+        } else {
+            alert('That was an invalid option!');
+            return;
         }
-    });
+        var consentHttpRequest = new XMLHttpRequest();
+        var consentUrl = location.protocol + "//" + location.hostname + (location.port ? ':' + location.port : '') +
+            "/" + "api/oauth/update?" +
+            "redirect_uri="+getUrlParameter('redirect_uri') +
+            "authorization_code="+getUrlParameter('authorization_code') +
+            "authorization="+authorization +
+            "client_id="+getUrlParameter('client_id');
+        consentHttpRequest.open('GET',consentUrl,true);
+        consentHttpRequest.onreadystatechange = function () {
+            if(consentHttpRequest.readyState === XMLHttpRequest.DONE) {
+                if(consentHttpRequest.status !== 200) {
+                    var defaultErrorMsg = 'There was an unknown error while processing the request';
+                    //See if we can parse the error message from the response JSON.
+                    try {
+                        var errorJSON = JSON.parse(consentHttpRequest.responseText);
+                        if(errorJSON['errorMessage'] !== undefined
+                            && errorJSON['errorMessage'] !== '') {
+                            alert(errorJSON['errorMessage']);
+                            return;
+                        }
+                        alert(defaultErrorMsg);
+                    } catch (err) {
+                        console.log(err);
+                        //Just alert the user with the default unknown error message.
+                        alert(defaultErrorMsg);
+                    }
+                }
+                //This was a 200 and re-direction from the server would have happened.
+            }
+        };
+        consentHttpRequest.send();
+    }
+
 </script>
 
 <h2>Confirmation</h2>
@@ -84,12 +113,8 @@ img.avatar {
   </div>
 
   <div class="container">
-    <button id="confirm" class="confirm-button">Confirm</button><button id="deny" class="deny-button">Deny</button>
+    <button id="confirm" class="confirm-button" onClick="submitConsent('confirm')">Confirm</button><button id="deny" class="deny-button" onClick="submitConsent('deny')">Deny</button>
   </div>
-
 </body>
-<script
-        src="https://code.jquery.com/jquery-3.2.1.js"
-        integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
-        crossorigin="anonymous"></script>
+
 </html>

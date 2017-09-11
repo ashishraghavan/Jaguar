@@ -3,13 +3,9 @@ package com.jaguar.service;
 import com.beust.jcommander.internal.Sets;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
-import com.jaguar.om.IApplication;
-import com.jaguar.om.IApplicationRole;
-import com.jaguar.om.IRole;
-import com.jaguar.om.IUserApplication;
+import com.jaguar.om.*;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.ApplicationRole;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +13,10 @@ import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
 import javax.servlet.ServletContext;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -57,7 +56,8 @@ public class OAuth2Service extends CommonService {
             @QueryParam("client_id") final String clientId,
             @QueryParam("redirect_uri") final String redirectUri,
             @QueryParam("scopeString") final String scopeString,
-            @QueryParam("prompt") final String prompt) {
+            @QueryParam("prompt") final String prompt,
+            @QueryParam("device_uid") final String deviceUid) {
         //Make sure all query parameters except scopeString is present
         if(Strings.isNullOrEmpty(responseType)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
@@ -82,6 +82,15 @@ public class OAuth2Service extends CommonService {
                     .build())
                     .build();
         }
+
+        if(Strings.isNullOrEmpty(deviceUid)) {
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
+                    .withMessage("device_uid")
+                    .build())
+                    .build();
+        }
+
         //We need to make sure the application is a valid one.
         IApplication application;
         try {
@@ -156,8 +165,15 @@ public class OAuth2Service extends CommonService {
         }
 
         final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
-        //If end user is not already authenticated
-        final String authQueryParams = "?" + REDIRECT_URI + "=" + redirectUri + "&" + OAUTH2_FLOW + "=" + "true" +  "&" + CLIENT_ID + "=" +clientId;
+        //If the current device is a desktop, we generate a unique id and append
+        //it along with the url. If this is a mobile device (ANDROID), the device
+        //id is generated using the android serial version and appended before
+        //calling this authorization URL.
+        final String authQueryParams = "?"
+                + REDIRECT_URI + "=" + redirectUri + "&"
+                + OAUTH2_FLOW + "=" + "true" +  "&"
+                + CLIENT_ID + "=" +clientId + "&"
+                + DEVICE_UID + "=" +deviceUid;
         if(isAuthenticationRequired || Strings.isNullOrEmpty(authToken)) {
             final URI loginUri;
             try {
@@ -185,10 +201,14 @@ public class OAuth2Service extends CommonService {
     }
 
     @Path("/update")
-    @POST
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @PermitAll
     @Transactional
-    public Response updateAuthorization(final @FormDataParam("authorization") String authorization) {
+    public Response updateAuthorization(final @QueryParam("authorization") String authorization,
+                                        final @QueryParam("redirect_uri") String redirectUri,
+                                        final @QueryParam("authorization_code") String authorizationCode,
+                                        final @QueryParam("client_id") String clientIdStr) {
         if(Strings.isNullOrEmpty(authorization)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -202,6 +222,40 @@ public class OAuth2Service extends CommonService {
                     .withMessage("Authorization", "among " + authorizations.toString()).build()).build();
         }
 
+        if(Strings.isNullOrEmpty(authorizationCode)) {
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage("Authorization Code","xxxxx-xxxxx")
+                    .build()).build();
+        }
+
+        if(Strings.isNullOrEmpty(redirectUri)) {
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("Redirect URI")
+                    .build()).build();
+        }
+
+        if(Strings.isNullOrEmpty(clientIdStr)) {
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("Client Id")
+                    .build()).build();
+        }
+
+        final IUser user = getCacheManager().getUserAuthorizationCache().getIfPresent(authorizationCode);
+        if(user == null) {
+            serviceLogger.error("The authorization code is invalid or has expired");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The authorization code is invalid or has expired")
+                    .build()).build();
+        }
+
+        if(IUserApplication.Authorization.AGREE == IUserApplication.Authorization.valueOf(authorization)) {
+            //If this is the agree option, update the application authorization
+            //Get the application using the client id.
+
+        } else {
+            //The user denied the consent. Just send an ok.
+            return Response.ok().build();
+        }
         //Check if this user has already authorized this application.
         //We check the user application table for the authorzation.
         return Response.ok().build();
