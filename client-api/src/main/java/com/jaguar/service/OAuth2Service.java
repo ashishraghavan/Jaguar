@@ -6,6 +6,10 @@ import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.*;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.ApplicationRole;
+import com.jaguar.om.impl.UserApplication;
+import jersey.repackaged.com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,18 +17,13 @@ import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
 import javax.servlet.ServletContext;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -201,14 +200,14 @@ public class OAuth2Service extends CommonService {
     }
 
     @Path("/update")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @POST
+    @Produces({MediaType.TEXT_HTML,MediaType.APPLICATION_JSON})
     @PermitAll
     @Transactional
-    public Response updateAuthorization(final @QueryParam("authorization") String authorization,
-                                        final @QueryParam("redirect_uri") String redirectUri,
-                                        final @QueryParam("authorization_code") String authorizationCode,
-                                        final @QueryParam("client_id") String clientIdStr) {
+    public Response updateAuthorization(final @FormDataParam("authorization") String authorization,
+                                        final @FormDataParam("redirect_uri") String redirectUri,
+                                        final @FormDataParam("authorization_code") String authorizationCode,
+                                        final @FormDataParam("client_id") String clientIdStr) {
         if(Strings.isNullOrEmpty(authorization)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -240,6 +239,15 @@ public class OAuth2Service extends CommonService {
                     .build()).build();
         }
 
+        if(!NumberUtils.isCreatable(clientIdStr)) {
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage("Client Id","123...")
+                    .build()).build();
+        }
+
+        final int clientId = Integer.parseInt(clientIdStr);
+        //See if the authorization code is still valid. If we can get the user from the authorization code,
+        //it is still valid.
         final IUser user = getCacheManager().getUserAuthorizationCache().getIfPresent(authorizationCode);
         if(user == null) {
             serviceLogger.error("The authorization code is invalid or has expired");
@@ -248,16 +256,104 @@ public class OAuth2Service extends CommonService {
                     .build()).build();
         }
 
-        if(IUserApplication.Authorization.AGREE == IUserApplication.Authorization.valueOf(authorization)) {
+        try {
             //If this is the agree option, update the application authorization
             //Get the application using the client id.
-
-        } else {
-            //The user denied the consent. Just send an ok.
-            return Response.ok().build();
+            IApplication application = new Application(clientId);
+            application = getDao().loadSingleFiltered(application,null,false);
+            if(application == null) {
+                serviceLogger.error("The application with client id "+clientIdStr+" does not exist");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("application with client id "+clientIdStr+" does not exist")
+                        .build()).build();
+            }
+            if(IUserApplication.Authorization.AGREE == IUserApplication.Authorization.valueOf(authorization)) {
+                //Create an entry in the user application table.
+                IUserApplication userApplication = new UserApplication(user,application);
+                userApplication.setAuthorization(IUserApplication.Authorization.AGREE);
+                final IUserApplication loadedUserApp = getDao().loadSingleFiltered(userApplication,null,false);
+                if(loadedUserApp != null) {
+                    serviceLogger.info("The application with the client id "+clientIdStr+" has already authorized.");
+                } else {
+                    getDao().save(userApplication);
+                }
+            } else {
+                //The user denied the consent. Just send an ok.
+                IUserApplication userApplication = new UserApplication(user,application);
+                userApplication.setAuthorization(IUserApplication.Authorization.DISAGREE);
+                getDao().save(userApplication);
+            }
+            final URI uri = URI.create(redirectUri + "?" +AUTHORIZATION_CODE + "=" +authorizationCode + "&" + CLIENT_ID + "=" + clientIdStr);
+            return Response.seeOther(uri).location(uri).build();
+        } catch (Exception e) {
+            serviceLogger.error("There was an error processing this request with message "+e.getLocalizedMessage());
+            return Response.serverError().build();
         }
-        //Check if this user has already authorized this application.
-        //We check the user application table for the authorzation.
-        return Response.ok().build();
+    }
+
+    @POST
+    @PermitAll
+    @Transactional
+    @Path("/token")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getToken(@FormDataParam("authorization_code") final String authorizationCode,
+                             @FormDataParam("client_id") final String clientIdStr) {
+        if(Strings.isNullOrEmpty(authorizationCode)) {
+            serviceLogger.error("The parameter authorization code is required for this request");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
+                    .withMessage("Authorization code").build()).build();
+        }
+
+        if(Strings.isNullOrEmpty(clientIdStr)) {
+            serviceLogger.error("The parameter client id is required for this request");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
+                    .withMessage("Client id").build()).build();
+        }
+
+        if(!NumberUtils.isCreatable(clientIdStr)) {
+            serviceLogger.error("The client id is expected to be a number, but found "+clientIdStr);
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INVALID_ARGUMENT)
+                    .withMessage("Client id","123...").build()).build();
+        }
+
+        final IUser user = getCacheManager().getUserAuthorizationCache().getIfPresent(authorizationCode);
+        if(user == null) {
+            serviceLogger.error("The authorization code is invalid or has expired");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The authorization code is invalid or has expired")
+                    .build()).build();
+        }
+        try {
+            final int clientId = Integer.parseInt(clientIdStr);
+            //If this is the agree option, update the application authorization
+            //Get the application using the client id.
+            IApplication application = new Application(clientId);
+            application = getDao().loadSingleFiltered(application,null,false);
+            if(application == null) {
+                serviceLogger.error("The application with client id "+clientIdStr+" does not exist");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("application with client id "+clientIdStr+" does not exist")
+                        .build()).build();
+            }
+            //Create the access and refresh token for this user.
+            final String token = UUID.randomUUID().toString();
+            getCacheManager().getTokenCache().put(token,user);
+            //Create refresh token
+            final String refreshToken = UUID.randomUUID().toString();
+            getCacheManager().getRefreshTokenCache().put(refreshToken,user);
+            getCacheManager().getUserApplicationCache().put(user,application);
+            final Map<String,Object> resultMap = ImmutableMap.<String,Object>builder()
+                    .put("user",user)
+                    .put("access_token",token)
+                    .put("refresh_token",refreshToken)
+                    .build();
+            return Response.ok().entity(resultMap).build();
+        } catch (Exception e) {
+            serviceLogger.error("There was an error processing this request with message "+e.getLocalizedMessage());
+            return Response.serverError().build();
+        }
     }
 }

@@ -9,7 +9,7 @@ public class CommonConstants {
     protected static final String SCOPES = "scopes";
     protected static final String REDIRECT_URI = "redirect_uri";
     protected static final String AUTHORIZATION_CODE = "authorization_code";
-    protected static final String CLIENT_ID = "clientId";
+    protected static final String CLIENT_ID = "client_id";
     protected static final String DEVICE_UID = "device_uid";
     protected static final String USER = "user";
     protected static final String ACCOUNT = "account";

@@ -73,15 +73,16 @@ img.avatar {
         }
         var consentHttpRequest = new XMLHttpRequest();
         var consentUrl = location.protocol + "//" + location.hostname + (location.port ? ':' + location.port : '') +
-            "/" + "api/oauth/update?" +
-            "redirect_uri="+getUrlParameter('redirect_uri') +
-            "authorization_code="+getUrlParameter('authorization_code') +
-            "authorization="+authorization +
-            "client_id="+getUrlParameter('client_id');
-        consentHttpRequest.open('GET',consentUrl,true);
+            "/" + "api/oauth/update?";
+        var formData = new FormData();
+        formData.set('redirect_uri',getUrlParameter('redirect_uri'));
+        formData.set('authorization_code',getUrlParameter('authorization_code'));
+        formData.set('authorization',authorization);
+        formData.set('client_id',getUrlParameter('client_id'));
+        consentHttpRequest.open('POST',consentUrl,true);
         consentHttpRequest.onreadystatechange = function () {
             if(consentHttpRequest.readyState === XMLHttpRequest.DONE) {
-                if(consentHttpRequest.status !== 200) {
+                if(consentHttpRequest.status >= 500) {
                     var defaultErrorMsg = 'There was an unknown error while processing the request';
                     //See if we can parse the error message from the response JSON.
                     try {
@@ -99,11 +100,17 @@ img.avatar {
                     }
                 }
                 //This was a 200 and re-direction from the server would have happened.
+                var responseURL = consentHttpRequest.responseURL;
+                if(responseURL === '' || responseURL === undefined || responseURL === null) {
+                    console.log('The response URL from the re-directed response was empty or undefined or null. Can\'t reload the page');
+                    return;
+                }
+                //now reload the page with the response URL.
+                window.location.href = responseURL;
             }
         };
-        consentHttpRequest.send();
+        consentHttpRequest.send(formData);
     }
-
 </script>
 
 <h2>Confirmation</h2>
@@ -113,7 +120,7 @@ img.avatar {
   </div>
 
   <div class="container">
-    <button id="confirm" class="confirm-button" onClick="submitConsent('confirm')">Confirm</button><button id="deny" class="deny-button" onClick="submitConsent('deny')">Deny</button>
+    <button id="confirm" class="confirm-button" onClick="return submitConsent('confirm')">Confirm</button><button id="deny" class="deny-button" onClick="return submitConsent('deny')">Deny</button>
   </div>
 </body>
 

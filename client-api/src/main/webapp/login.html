@@ -84,7 +84,7 @@
         var password = document.getElementById('password').value;
         var oauth2_flow = getUrlParameter("oauth2_flow");
         var redirect_uri = getUrlParameter("redirect_uri");
-        var clientId = getUrlParameter("clientId");
+        var clientId = getUrlParameter("client_id");
         var deviceUid = getUrlParameter("device_uid");
         var authenticationServiceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
             "/" + "api/authorize/login";
