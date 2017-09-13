@@ -11,8 +11,8 @@ public class CommonConstants {
     protected static final String AUTHORIZATION_CODE = "authorization_code";
     protected static final String CLIENT_ID = "client_id";
     protected static final String DEVICE_UID = "device_uid";
-    protected static final String USER = "user";
-    protected static final String ACCOUNT = "account";
+    protected static final String ERROR_REASON = "error_reason";
+
 
     //Prompt values for OAUTH2
     protected static final String PROMPT_LOGIN = "login";

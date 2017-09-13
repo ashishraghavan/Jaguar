@@ -79,10 +79,11 @@ img.avatar {
         formData.set('authorization_code',getUrlParameter('authorization_code'));
         formData.set('authorization',authorization);
         formData.set('client_id',getUrlParameter('client_id'));
+        formData.set('scopes',getUrlParameter('scopes'));
         consentHttpRequest.open('POST',consentUrl,true);
         consentHttpRequest.onreadystatechange = function () {
             if(consentHttpRequest.readyState === XMLHttpRequest.DONE) {
-                if(consentHttpRequest.status >= 500) {
+                if(consentHttpRequest.status >= 400) {
                     var defaultErrorMsg = 'There was an unknown error while processing the request';
                     //See if we can parse the error message from the response JSON.
                     try {

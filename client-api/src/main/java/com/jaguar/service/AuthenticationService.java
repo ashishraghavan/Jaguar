@@ -9,7 +9,6 @@ import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.Device;
 import com.jaguar.om.impl.DeviceUser;
 import com.jaguar.om.impl.User;
-import jersey.repackaged.com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -27,7 +26,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -64,7 +62,8 @@ public class AuthenticationService extends CommonService {
                           @FormDataParam("device_uid") final String deviceId,
                           @FormDataParam("auth_flow") final String isAuthFlow,
                           @FormDataParam("redirect_uri") final String redirectUri,
-                          @FormDataParam("client_id") final String clientIdStr) {
+                          @FormDataParam("client_id") final String clientIdStr,
+                          @FormDataParam("scopes") final String scopes) {
         if (Strings.isNullOrEmpty(username)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -202,10 +201,10 @@ public class AuthenticationService extends CommonService {
                         + "&" + OAUTH2_FLOW + "=" +isAuthFlow
                         + "&" + CLIENT_ID + "=" +clientId
                         + "&" + AUTHORIZATION_CODE + "=" +authorizationCode
-                        + "&" + DEVICE_UID + "=" +deviceId;
-                final URI baseUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
-                final Map<String,Object> response = ImmutableMap.<String,Object>builder().put("Location",baseUri.toString()).build();
-                return Response.ok(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(response)).build();
+                        + "&" + DEVICE_UID + "=" +deviceId
+                        + "&" + SCOPES + "=" +scopes;
+                final URI consentURI = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
+                return Response.seeOther(consentURI).location(consentURI).build();
             }
 
             //Just send an ok message

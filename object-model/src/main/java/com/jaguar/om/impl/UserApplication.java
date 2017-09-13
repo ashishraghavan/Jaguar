@@ -1,10 +1,7 @@
 package com.jaguar.om.impl;
 
 
-import com.jaguar.om.IAccount;
-import com.jaguar.om.IApplication;
-import com.jaguar.om.IUser;
-import com.jaguar.om.IUserApplication;
+import com.jaguar.om.*;
 import org.hibernate.annotations.ForeignKey;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +16,7 @@ public class UserApplication extends CommonObject implements IUserApplication {
         super();
     }
 
-    public UserApplication(final IUser user,final IApplication application) {
+    public UserApplication(final IUser user, final IApplication application) {
         this();
         this.user = user;
         this.application = application;
@@ -27,22 +24,22 @@ public class UserApplication extends CommonObject implements IUserApplication {
     }
 
     @ManyToOne(targetEntity = User.class,optional = false)
-    @JoinColumn(name = "user_id",nullable = false,updatable = true,insertable = true)
+    @JoinColumn(name = "user_id",nullable = false)
     @ForeignKey(name = "fk_user_application_user_id")
     private IUser user;
 
 
     @ManyToOne(targetEntity = Application.class,optional = false)
-    @JoinColumn(name = "application_id",nullable = false,updatable = true,insertable = true)
+    @JoinColumn(name = "application_id",nullable = false)
     @ForeignKey(name = "fk_user_application_application_id")
     private IApplication application;
 
     @ManyToOne(targetEntity = Account.class,optional = false)
-    @JoinColumn(name = "account_id",nullable = false,updatable = true,insertable = true)
+    @JoinColumn(name = "account_id",nullable = false)
     @ForeignKey(name = "fk_user_application_account_id")
     private IAccount account;
 
-    @Column(name = "authorization_status",nullable = true,insertable = true,updatable = true)
+    @Column(name = "authorization_status")
     @Enumerated(value = EnumType.STRING)
     private Authorization authorization;
 

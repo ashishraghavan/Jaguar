@@ -86,6 +86,7 @@
         var redirect_uri = getUrlParameter("redirect_uri");
         var clientId = getUrlParameter("client_id");
         var deviceUid = getUrlParameter("device_uid");
+        var scopes = getUrlParameter('scopes');
         var authenticationServiceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
             "/" + "api/authorize/login";
         var loginHttpRequest = new XMLHttpRequest();
@@ -97,16 +98,10 @@
         formData.set('redirect_uri',redirect_uri);
         formData.set('client_id',clientId);
         formData.set('device_uid',deviceUid);
+        formData.set('scopes',scopes);
         loginHttpRequest.onreadystatechange = function () {
             if(loginHttpRequest.readyState === XMLHttpRequest.DONE) {
-                if(loginHttpRequest.status === 200) {
-                    //We get the location property from the response
-                    //and call that URL instead of re-directing from the server.
-                    var successJSON = JSON.parse(this.responseText);
-                    if(successJSON['Location'] !== '' && successJSON['Location'] !== undefined) {
-                        window.location = successJSON['Location'];
-                    }
-                } else {
+                if(loginHttpRequest.status >= 400) {
                     //Any other case. The server will re-direct
                     //the user to the consent.html page after a
                     //successful authentication.
@@ -121,6 +116,15 @@
                         alert(errorJSON['errorMessage']);
                     }
                 }
+                //We get the location property from the response
+                //and call that URL instead of re-directing from the server.
+                var consentURL = loginHttpRequest.responseURL;
+                if(consentURL === '' || consentURL === undefined || consentURL === null) {
+                    console.log('The consent response URL was empty/null/undefined');
+                    return;
+                }
+                //now reload the page with the re-directed URL.
+                window.location.href = consentURL;
             }
         };
         loginHttpRequest.send(formData);

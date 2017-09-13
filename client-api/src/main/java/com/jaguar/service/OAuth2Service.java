@@ -4,15 +4,14 @@ import com.beust.jcommander.internal.Sets;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.*;
-import com.jaguar.om.impl.Application;
-import com.jaguar.om.impl.ApplicationRole;
-import com.jaguar.om.impl.UserApplication;
+import com.jaguar.om.impl.*;
 import jersey.repackaged.com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.testng.collections.Lists;
 import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
@@ -54,9 +53,10 @@ public class OAuth2Service extends CommonService {
             @QueryParam("response_type") final String responseType,
             @QueryParam("client_id") final String clientId,
             @QueryParam("redirect_uri") final String redirectUri,
-            @QueryParam("scopeString") final String scopeString,
+            @QueryParam("scope") final String scopeString,
             @QueryParam("prompt") final String prompt,
-            @QueryParam("device_uid") final String deviceUid) {
+            @QueryParam("device_uid") final String deviceUid,
+            @QueryParam("username") final String email) {
         //Make sure all query parameters except scopeString is present
         if(Strings.isNullOrEmpty(responseType)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
@@ -115,31 +115,35 @@ public class OAuth2Service extends CommonService {
         String[] tokenizedScopeString;
         try {
             //Compare each role that the user has sent against the roles we have from the application.
-            if(!Strings.isNullOrEmpty(scopeString)) {
-                tokenizedScopeString = scopeString.split(",");
-                if(tokenizedScopeString.length <= 0) {
-                    serviceLogger.error("The scope parameter is not in the requried format. Expected format was ?scope=abc,xyz but found "+Arrays.toString(tokenizedScopeString));
+            if(Strings.isNullOrEmpty(scopeString)) {
+                serviceLogger.error("No scopes/roles specified for this request.");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
+                        .withMessage("Scope/role").build()).build();
+            }
+            tokenizedScopeString = scopeString.split(",");
+            if(tokenizedScopeString.length <= 0) {
+                serviceLogger.error("The scope parameter is not in the requried format. Expected format was ?scope=abc,xyz but found "+Arrays.toString(tokenizedScopeString));
+                return Response.status(HttpStatus.BAD_REQUEST.value())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INVALID_ARGUMENT)
+                                .withMessage("scope", "?scope=abc,xyz").build()).build();
+            }
+            final List<IApplicationRole> appRoleList = getDao().loadFiltered(appRole,false);
+            if(appRoleList == null || appRoleList.isEmpty()) {
+                serviceLogger.error("The application with client id "+clientId+" does not have any roles associated with it.");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The application with client id "+clientId+
+                                " does not have any roles associated with it").build()).build();
+            }
+            roles = Sets.newHashSet();
+            roleSet = Sets.newHashSet();
+            roles.addAll(appRoleList.stream().map(apRole -> apRole.getRole().getName()).collect(Collectors.toList()));
+            //Collect all the roles requested by the client.
+            roleSet.addAll(appRoleList.stream().map(IApplicationRole::getRole).collect(Collectors.toSet()));
+            for(String clientRole : tokenizedScopeString) {
+                if(!roles.contains(clientRole)) {
                     return Response.status(HttpStatus.BAD_REQUEST.value())
-                            .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INVALID_ARGUMENT)
-                                    .withMessage("scope", "?scope=abc,xyz").build()).build();
-                }
-                final List<IApplicationRole> appRoleList = getDao().loadFiltered(appRole,false);
-                if(appRoleList == null || appRoleList.isEmpty()) {
-                    serviceLogger.error("The application with client id "+clientId+" does not have any roles associated with it.");
-                    return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                            .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The application with client id "+clientId+
-                                    " does not have any roles associated with it").build()).build();
-                }
-                roles = Sets.newHashSet();
-                roleSet = Sets.newHashSet();
-                roles.addAll(appRoleList.stream().map(apRole -> apRole.getRole().getName()).collect(Collectors.toList()));
-                //Collect all the roles requested by the client.
-                roleSet.addAll(appRoleList.stream().map(IApplicationRole::getRole).collect(Collectors.toSet()));
-                for(String clientRole : tokenizedScopeString) {
-                    if(!roles.contains(clientRole)) {
-                        return Response.status(HttpStatus.BAD_REQUEST.value())
-                                .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND).withMessage("The role " + clientRole).build()).build();
-                    }
+                            .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND).withMessage("The role " + clientRole).build()).build();
                 }
             }
         } catch (Exception e) {
@@ -149,7 +153,13 @@ public class OAuth2Service extends CommonService {
         }
 
         final String authToken = getAuthTokenFromHeaders(requestContext.getHeaderString(AUTHORIZATION));
+        final IUser authenticatedUser = Strings.isNullOrEmpty(authToken) ? null : getCacheManager().getTokenCache().getIfPresent(authToken);
         boolean isAuthenticationRequired = false;
+        boolean isSelectAccount = false;
+        if(authenticatedUser == null) {
+            serviceLogger.error("There was an error obtaining the user from the token");
+            isAuthenticationRequired = true;
+        }
         if(!Strings.isNullOrEmpty(prompt)) {
             //There is a prompt query. Check to see what its value is.
             //Allowed values are [none,login,consent, select_account]
@@ -161,6 +171,34 @@ public class OAuth2Service extends CommonService {
                 return Response.status(HttpStatus.UNAUTHORIZED.value())
                         .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build();
             }
+            if(prompt.equalsIgnoreCase(PROMPT_SELECT_ACCOUNT)) {
+                isSelectAccount = true;
+                //If there is no email for this request, we send back a Bad request.
+                if(Strings.isNullOrEmpty(email)) {
+                    serviceLogger.error("No email given with prompt "+PROMPT_SELECT_ACCOUNT);
+                    return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
+                            .withMessage("Username/Email").build()).build();
+                }
+            }
+        }
+        //If this is select account prompt, send back a list of accounts that this user belongs to.
+        if(isSelectAccount) {
+            try {
+                final IUser user = new User(email);
+                final List<IUser> userList = getDao().loadFiltered(user,false);
+                if(userList == null || userList.isEmpty()) {
+                    return Response.noContent().build();
+                }
+                final List<IAccount> accountList = Lists.newArrayList();
+                for(IUser accountUser : userList) {
+                    accountList.add(accountUser.getAccount());
+                }
+                return Response.ok(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(accountList)).build();
+            } catch (Exception e) {
+                serviceLogger.error("There was an error querying accounts for this user with exception "+e.getLocalizedMessage());
+                return Response.serverError().build();
+            }
         }
 
         final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
@@ -168,11 +206,15 @@ public class OAuth2Service extends CommonService {
         //it along with the url. If this is a mobile device (ANDROID), the device
         //id is generated using the android serial version and appended before
         //calling this authorization URL.
+        //We pass the scopes to the login to get the user after authentication
+        //and update the UserApplication table for roles to be used by
+        //a user against an application.
         final String authQueryParams = "?"
                 + REDIRECT_URI + "=" + redirectUri + "&"
                 + OAUTH2_FLOW + "=" + "true" +  "&"
                 + CLIENT_ID + "=" +clientId + "&"
-                + DEVICE_UID + "=" +deviceUid;
+                + DEVICE_UID + "=" +deviceUid + "&"
+                + SCOPES + "=" +scopeString;
         if(isAuthenticationRequired || Strings.isNullOrEmpty(authToken)) {
             final URI loginUri;
             try {
@@ -194,6 +236,7 @@ public class OAuth2Service extends CommonService {
             }
         }
 
+        //
         //Take the user to the consent page since the user has authenticated.
         final URI consentUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
         return Response.temporaryRedirect(consentUri).location(consentUri).build();
@@ -207,7 +250,8 @@ public class OAuth2Service extends CommonService {
     public Response updateAuthorization(final @FormDataParam("authorization") String authorization,
                                         final @FormDataParam("redirect_uri") String redirectUri,
                                         final @FormDataParam("authorization_code") String authorizationCode,
-                                        final @FormDataParam("client_id") String clientIdStr) {
+                                        final @FormDataParam("client_id") String clientIdStr,
+                                        final @FormDataParam("scopes") String scopes) {
         if(Strings.isNullOrEmpty(authorization)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -267,23 +311,26 @@ public class OAuth2Service extends CommonService {
                         .withErrorCode(ErrorMessage.EXCEPTION).withMessage("application with client id "+clientIdStr+" does not exist")
                         .build()).build();
             }
-            if(IUserApplication.Authorization.AGREE == IUserApplication.Authorization.valueOf(authorization)) {
-                //Create an entry in the user application table.
-                IUserApplication userApplication = new UserApplication(user,application);
-                userApplication.setAuthorization(IUserApplication.Authorization.AGREE);
-                final IUserApplication loadedUserApp = getDao().loadSingleFiltered(userApplication,null,false);
-                if(loadedUserApp != null) {
-                    serviceLogger.info("The application with the client id "+clientIdStr+" has already authorized.");
-                } else {
-                    getDao().save(userApplication);
-                }
-            } else {
-                //The user denied the consent. Just send an ok.
-                IUserApplication userApplication = new UserApplication(user,application);
-                userApplication.setAuthorization(IUserApplication.Authorization.DISAGREE);
-                getDao().save(userApplication);
+            //No need for separate blocks for agree & disagree.
+            final IUserApplication.Authorization decision = IUserApplication.Authorization.valueOf(authorization);
+            //Create an entry in the user application table.
+            IUserApplication userApplication = new UserApplication(user,application);
+            final IUserApplication loadedUserApplication = getDao().loadSingleFiltered(userApplication,null,false);
+            if(loadedUserApplication != null) {
+                //update operation.
+                serviceLogger.info("The application with the client id "+clientIdStr+" has already authorized.");
+                userApplication = loadedUserApplication;
             }
-            final URI uri = URI.create(redirectUri + "?" +AUTHORIZATION_CODE + "=" +authorizationCode + "&" + CLIENT_ID + "=" + clientIdStr);
+            //Set the consent decision.
+            userApplication.setAuthorization(decision);
+            getDao().save(userApplication);
+            //Only if the user agreed to the roles, we send a re-direct.
+            final URI uri;
+            if(decision == IUserApplication.Authorization.AGREE) {
+                uri = URI.create(redirectUri + "?" +AUTHORIZATION_CODE + "=" +authorizationCode + "&" + CLIENT_ID + "=" + clientIdStr);
+            } else {
+                uri = URI.create(redirectUri + "?" +ERROR_REASON+ "=" +"The user denied the authorization request");
+            }
             return Response.seeOther(uri).location(uri).build();
         } catch (Exception e) {
             serviceLogger.error("There was an error processing this request with message "+e.getLocalizedMessage());
@@ -319,14 +366,10 @@ public class OAuth2Service extends CommonService {
                     .withMessage("Client id","123...").build()).build();
         }
 
-        final IUser user = getCacheManager().getUserAuthorizationCache().getIfPresent(authorizationCode);
-        if(user == null) {
-            serviceLogger.error("The authorization code is invalid or has expired");
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                    .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The authorization code is invalid or has expired")
-                    .build()).build();
-        }
+
         try {
+            //First check if the user confirmed/denied the consent.
+            //If the consent was denied, there won't be any authorization code.
             final int clientId = Integer.parseInt(clientIdStr);
             //If this is the agree option, update the application authorization
             //Get the application using the client id.
@@ -337,6 +380,29 @@ public class OAuth2Service extends CommonService {
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                         .withErrorCode(ErrorMessage.EXCEPTION).withMessage("application with client id "+clientIdStr+" does not exist")
                         .build()).build();
+            }
+
+            final IUser user = getCacheManager().getUserAuthorizationCache().getIfPresent(authorizationCode);
+            if(user == null) {
+                serviceLogger.error("The authorization code is invalid or has expired");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The authorization code is invalid or has expired")
+                        .build()).build();
+            }
+
+            IUserApplication userApplication = new UserApplication(user,application);
+            userApplication = getDao().loadSingleFiltered(userApplication,null,false);
+            if(userApplication == null) {
+                serviceLogger.error("The user with email "+user.getEmail()+" cannot be associated with the application "+application.getName());
+                return Response.status(HttpStatus.BAD_REQUEST.value())
+                        .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
+                                .withMessage("The user with email "+user.getEmail()+" cannot be associated with the application "+application.getName()).build()).build();
+            }
+            if(userApplication.getAuthorization() == IUserApplication.Authorization.DISAGREE) {
+                //Do not send the token in this case.
+                serviceLogger.error("THe user "+user.getEmail()+" denied authorization for "+application.getName());
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The user with email "+user.getEmail()+" cannot be associated with the application "+application.getName()).build()).build();
             }
             //Create the access and refresh token for this user.
             final String token = UUID.randomUUID().toString();

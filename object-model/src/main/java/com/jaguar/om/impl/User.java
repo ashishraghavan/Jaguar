@@ -22,6 +22,11 @@ public class User extends CommonObject implements IUser,Principal{
 
     public User() {}
 
+    public User(final String email) {
+        this();
+        this.email = email;
+    }
+
     public User(final IAccount account) {
         this();
         this.account = account;

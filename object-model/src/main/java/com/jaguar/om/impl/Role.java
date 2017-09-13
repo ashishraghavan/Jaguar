@@ -14,16 +14,21 @@ public class Role extends CommonObject implements IRole {
 
 
     public Role() {}
-    public Role(final String name,final String description) {
+
+    public Role(final String name) {
         super();
         this.name = name;
+    }
+
+    public Role(final String name,final String description) {
+        this(name);
         this.description = description;
     }
 
-    @Column(name = "name",insertable = true,updatable = true,nullable = false,length = 100)
+    @Column(name = "name",nullable = false,length = 100)
     private String name;
 
-    @Column(name = "description",insertable = true,updatable = true,nullable = false)
+    @Column(name = "description",nullable = false)
     private String description;
 
     public String getName() {
