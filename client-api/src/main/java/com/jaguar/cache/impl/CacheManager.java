@@ -12,6 +12,7 @@ import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@SuppressWarnings("unused")
 public class CacheManager implements ICacheManager {
 
     private static final Logger cacheLogger = Logger.getLogger(CacheManager.class.getSimpleName());
@@ -21,20 +22,22 @@ public class CacheManager implements ICacheManager {
     private final long TOKEN_DURATION = 1;
     private final long REFRESH_TOKEN_DURATION = 1;
     private final long AUTHORIZATION_CODE_DURATION = 10; //minutes
+    private final long VERIFICATION_CODE_DURATION = 10; //minutes
     private final Calendar calendar = Calendar.getInstance();
     //Here key would the app session identifier (random) and value will be the application against which this was obtained.
-    protected final Cache<String,IApplication> appSessionCache = CacheBuilder
+    private final Cache<String,IApplication> appSessionCache = CacheBuilder
             .newBuilder().expireAfterWrite(APP_SESSION_DURATION, TimeUnit.DAYS).recordStats().build();
     //This is the token cache.
-    protected final Cache<IUser,IApplication> userApplicationCache = CacheBuilder
+    private final Cache<IUser,IApplication> userApplicationCache = CacheBuilder
             .newBuilder().expireAfterWrite(USER_APP_DURATION,TimeUnit.DAYS).recordStats().build();
-    protected final Cache<String,IUser> tokenCache = CacheBuilder
+    private final Cache<String,IUser> tokenCache = CacheBuilder
             .newBuilder().expireAfterWrite(TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
-    protected final Cache<String,IUser> refreshTokenCache = CacheBuilder
+    private final Cache<String,IUser> refreshTokenCache = CacheBuilder
             .newBuilder().expireAfterWrite(REFRESH_TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
-    protected final Cache<String,IUser> userAuthorizationCache = CacheBuilder
+    private final Cache<String,IUser> userAuthorizationCache = CacheBuilder
             .newBuilder().expireAfterWrite(AUTHORIZATION_CODE_DURATION,TimeUnit.MINUTES).recordStats().build();
-
+    private final Cache<String,IUser> emailVerificationCache = CacheBuilder
+            .newBuilder().expireAfterWrite(VERIFICATION_CODE_DURATION,TimeUnit.MINUTES).recordStats().build();
 
     @Override
     public Cache<String, IApplication> getAppCache() {
@@ -59,6 +62,11 @@ public class CacheManager implements ICacheManager {
     @Override
     public Cache<String,IUser> getUserAuthorizationCache() {
         return this.userAuthorizationCache;
+    }
+
+    @Override
+    public Cache<String, IUser> getEmailVerificationCache() {
+        return this.emailVerificationCache;
     }
 
     @SuppressWarnings("unused")

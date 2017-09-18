@@ -3,8 +3,8 @@ package com.jaguar.service;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.*;
-import com.jaguar.om.common.EmailManager;
-import com.jaguar.om.common.SMSManager;
+import com.jaguar.om.notification.EmailManager;
+import com.jaguar.om.notification.SMSManager;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.Device;
 import com.jaguar.om.impl.DeviceUser;
@@ -34,7 +34,7 @@ import java.util.UUID;
  */
 
 @Component
-@Path("/authorize")
+@Path("/login")
 public class AuthenticationService extends CommonService {
 
     private static final Logger authorizationServiceLogger = Logger.getLogger(AuthenticationService.class.getSimpleName());
@@ -51,7 +51,6 @@ public class AuthenticationService extends CommonService {
      * We determine if this is a web application by the client id.
      * TODO: To be revisited after finishing VerificationSERv
      */
-    @Path("/login")
     @POST
     @PermitAll
     @Transactional
@@ -143,6 +142,14 @@ public class AuthenticationService extends CommonService {
                         .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND)
                                 .withMessage("The device with id " + deviceId).build()).build();
             }
+
+            //Check if this user is active.
+            if(!user.isActive()) {
+                serviceLogger.error("The user with the email "+user.getEmail()+" has not verified and is still inactive");
+                return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("User needs to be verify either using email or phone").build()).build();
+            }
+
             //Check the UserDevice table to see if we find a correct user -> device match.
             IDeviceUser deviceUser = new DeviceUser(device, user);
             deviceUser.setAccount(application.getAccount());
@@ -213,34 +220,5 @@ public class AuthenticationService extends CommonService {
             authorizationServiceLogger.error("Error invoking the service login with error message " + e.getLocalizedMessage());
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(wrapExceptionForEntity(e)).build();
         }
-    }
-
-    /**
-     * Does the new user registration.
-     * @param username The email for this user
-     * @param password The password in plain text for this user.
-     * @param firstName The first name.
-     * @param lastName The last name.
-     * @param phone The phone number [is optional]
-     * @param deviceUid The unique device id of the user. Has to be generated from the client side.
-     * @param model The model of the device.
-     * @param api THe ANDROID api version of the device. Minimum supported version is from 15.
-     * @param notificationServiceId The notification service id of the device if available.
-     * @return {@link HttpStatus#OK} is the user registered successfully, {@link HttpStatus#BAD_REQUEST} with the reason.
-     */
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Transactional
-    @PermitAll
-    public Response registerUser(final @FormDataParam("username") String username,
-                                 final @FormDataParam("password") String password,
-                                 final @FormDataParam("first_name") String firstName,
-                                 final @FormDataParam("last_name") String lastName,
-                                 final @FormDataParam("phone") String phone,
-                                 final @FormDataParam("device_uid") String deviceUid,
-                                 final @FormDataParam("model") String model,
-                                 final @FormDataParam("ap_version") String api,
-                                 final @FormDataParam("notification_service_id") String notificationServiceId) {
-        return Response.ok().build();
     }
 }

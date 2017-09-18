@@ -28,6 +28,7 @@ public class ErrorMessage {
     public static final int INVALID_SESSION = 9;
     public static final int INTERNAL_SERVER_ERROR = 10;
     public static final int NOT_AUTHORIZED = 11;
+    public static final int LINK_EXPIRED = 12;
 
     public static Builder builder() {
         return new Builder();
@@ -46,6 +47,7 @@ public class ErrorMessage {
             .put(INVALID_SESSION,"%s has an invalid session. Please re-validate")
             .put(INTERNAL_SERVER_ERROR,"An error occurred while processing this request")
             .put(NOT_AUTHORIZED,"Authentication is required for this request")
+            .put(LINK_EXPIRED,"This link has expired. Please try re-sending the link and try again")
             .build();
     /**
      * Try getting the error message from

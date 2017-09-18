@@ -88,7 +88,7 @@
         var deviceUid = getUrlParameter("device_uid");
         var scopes = getUrlParameter('scopes');
         var authenticationServiceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
-            "/" + "api/authorize/login";
+            "/" + "api/login";
         var loginHttpRequest = new XMLHttpRequest();
         loginHttpRequest.open('POST',authenticationServiceUrl,true);
         var formData = new FormData();

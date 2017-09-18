@@ -14,4 +14,6 @@ public interface ICacheManager {
     Cache<String,IUser> getRefreshTokenCache();
     //Cache for authorization flow
     Cache<String,IUser> getUserAuthorizationCache();
+    //Cache to validate email verification
+    Cache<String,IUser> getEmailVerificationCache();
 }

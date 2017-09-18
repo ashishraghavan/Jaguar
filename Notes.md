@@ -14,9 +14,11 @@ jaguar_cookie=619fb794-1f04-440c-9bbf-547a6918a4cb;Version=1;Comment="cookie for
 {"account":{"accountName":"Jaguar","city":"Long Is City","country":"USA","state":"NY","postalCode":"11101","creationDate":"Aug 28, 2017 10:24:24 PM","modificationDate":"Aug 28, 2017 10:24:24 PM","active":true,"id":1},"name":"AppSense","redirectUri":"http://localhost:8080/api/client","clientId":1903475,"clientSecret":"7a5e9fc6-290b-4c97-8386-67237414f469","versionCode":"1.0","packageName":"com.jaguar.jaguarxf","applicationType":"MOBILE_APP","applicationRoles":[],"creationDate":"Aug 28, 2017 10:24:24 PM","modificationDate":"Aug 28, 2017 10:24:24 PM","active":true,"id":1}
 
 Request authorization code
-curl -v -L --cookie "jaguar_cookie=9520cd38-2adc-4c89-82e9-a61047a3527f" "http://localhost:8080/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080/api/client&scopeString=seller"
+curl -v -L "http://localhost:8080/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME"
 
-curl -v -X POST --cookie "jaguar_cookie=a17870b6-4d8e-4097-a473-a9aa04f19135" -F "username=ashish.raghavan@google.com" -F "password=12345" -F "device_uid=TXF5143" "http://localhost:8080/api/authorize/login"
+curl -v -X POST --cookie "jaguar_cookie=a17870b6-4d8e-4097-a473-a9aa04f19135" -F "username=ashish.raghavan@google.com" -F "password=12345" -F "device_uid=GOOGLECHROME" -F "auth_flow=true" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" "http://localhost:8080/api/authorize/login"
+
+curl -L -v -X POST -F "redirect_uri=http://localhost:8080" -F "authorization_code=3d15883b-5df6-4086-8bef-1701447eb4a5" -F "authorization=AGREE" -F "client_id=1095369" http://localhost:8080/api/oauth/token
 
 {	
   "access_token" : "40d6b613-e77a-4911-858a-64cf2f02cb63",
@@ -46,3 +48,7 @@ curl -v -X POST --cookie "jaguar_cookie=a17870b6-4d8e-4097-a473-a9aa04f19135" -F
     "phoneNumber" : "4082216275"
   }
 }
+
+For sending emails, we are using MailGun, with the username as 'api' and password as 'key-910ae7b7d0722488c0951dfce679fe76'. This is the basic authentication scheme. The domain name used is 'sandbox263d8e2e3daf4b92bbd0cff99aa5cdd3.mailgun.org', which is the sandbox domain for my free account.
+
+API key for MailGun = key-910ae7b7d0722488c0951dfce679fe76

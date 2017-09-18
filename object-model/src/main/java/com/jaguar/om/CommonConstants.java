@@ -20,4 +20,6 @@ public class CommonConstants {
     protected static final String PROMPT_CONSENT = "consent";
     protected static final String PROMPT_SELECT_ACCOUNT = "select_account";
 
+    protected static final String VERIFICATION_EMAIL = "Please verify yourself by clicking on the following link. \n\n" +
+            "%s";
 }
