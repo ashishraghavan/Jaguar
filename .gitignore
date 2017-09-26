@@ -30,6 +30,7 @@ chat/chat.iml
 object-model/object-model.imlo
 chat/src/
 chat/target/
+client-api/target
 client-api/src/main/java/com/jaguar/client/
 general-api-developer-guide.pdf
 lib/

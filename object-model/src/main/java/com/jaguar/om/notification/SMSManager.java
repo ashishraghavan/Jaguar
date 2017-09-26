@@ -3,9 +3,10 @@ package com.jaguar.om.notification;
 import com.jaguar.om.ISMSManager;
 import com.jaguar.om.impl.CommonObject;
 import org.apache.log4j.Logger;
+import org.springframework.stereotype.Component;
 import org.testng.util.Strings;
 
-
+@Component
 public class SMSManager extends CommonObject implements ISMSManager {
 
     private static final Logger smsLogger = Logger.getLogger(SMSManager.class.getSimpleName());

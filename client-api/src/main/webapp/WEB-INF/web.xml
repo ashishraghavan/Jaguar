@@ -11,7 +11,7 @@
     </context-param>
     <context-param>
         <param-name>webAppRootKey</param-name>
-        <param-value>client</param-value>
+        <param-value>client-api</param-value>
     </context-param>
 
     <listener>

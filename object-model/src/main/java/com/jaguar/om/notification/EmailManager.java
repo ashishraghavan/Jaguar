@@ -4,6 +4,7 @@ package com.jaguar.om.notification;
 import com.jaguar.om.IEmailManager;
 import com.jaguar.om.impl.CommonObject;
 import org.apache.log4j.Logger;
+import org.springframework.stereotype.Component;
 import org.testng.util.Strings;
 
 import javax.mail.*;
@@ -11,6 +12,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
+@Component
 public class EmailManager extends CommonObject implements IEmailManager {
 
     private static final Logger emailLogger = Logger.getLogger(EmailManager.class.getSimpleName());

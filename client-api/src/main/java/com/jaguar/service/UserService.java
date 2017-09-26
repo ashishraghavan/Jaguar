@@ -52,6 +52,9 @@ public class UserService extends CommonService {
      * @param api THe ANDROID api version of the device. Minimum supported version is from 15.
      * @param notificationServiceId The notification service id of the device if available.
      * @return {@link HttpStatus#OK} is the user registered successfully, {@link HttpStatus#BAD_REQUEST} with the reason.
+     *
+     * curl -v -X POST -F "username=ashish13687@gmail.com" -F "password=12345" -F "first_name=Ashish" -F "last_name=Raghavan"
+     *                 -F "phone=4082216275" -F "device_uid=iOS6sPlus-A1687" -F "model=iPhone6sPlus" -F "client_id="
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
@@ -71,7 +74,6 @@ public class UserService extends CommonService {
 
         //These are the basic validation fields.
         if(Strings.isNullOrEmpty(username)) {
-
             serviceLogger.error("Username parameter not specified");
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("username").build()).build();

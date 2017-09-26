@@ -49,6 +49,9 @@ curl -L -v -X POST -F "redirect_uri=http://localhost:8080" -F "authorization_cod
   }
 }
 
-For sending emails, we are using MailGun, with the username as 'api' and password as 'key-910ae7b7d0722488c0951dfce679fe76'. This is the basic authentication scheme. The domain name used is 'sandbox263d8e2e3daf4b92bbd0cff99aa5cdd3.mailgun.org', which is the sandbox domain for my free account.
+For sending emails, we are using MailGun, with the username as 'api' and password as 'key-910ae7b7d0722488c0951dfce679fe76'. This is the basic authentication scheme. The domain name used is 'postmaster@ashishraghavan.me', which is the sandbox domain for my free account.
 
 API key for MailGun = key-910ae7b7d0722488c0951dfce679fe76
+
+API for registering a user.
+
