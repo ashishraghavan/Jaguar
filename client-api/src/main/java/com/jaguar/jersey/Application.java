@@ -1,9 +1,6 @@
 package com.jaguar.jersey;
 
-import com.jaguar.service.ApplicationService;
-import com.jaguar.service.AuthenticationService;
-import com.jaguar.service.OAuth2Service;
-import com.jaguar.service.VersionService;
+import com.jaguar.service.*;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.mvc.MvcFeature;
@@ -28,5 +25,6 @@ public class Application extends ResourceConfig {
         register(AuthenticationService.class);
         register(OAuth2Service.class);
         register(MultiPartFeature.class);
+        register(UserService.class);
     }
 }

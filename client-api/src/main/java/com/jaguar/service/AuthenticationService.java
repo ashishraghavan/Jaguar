@@ -49,7 +49,6 @@ public class AuthenticationService extends CommonService {
      * device_id - the id of the device the user is trying to sign in into.
      * If this is a web application, there won't be a device_id
      * We determine if this is a web application by the client id.
-     * TODO: To be revisited after finishing VerificationSERv
      */
     @POST
     @PermitAll

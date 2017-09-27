@@ -5,6 +5,13 @@ When not using the jersey-spring3 integration dependency, the setter method with
 For running the build.
 mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15" clean install
 
+DB_SERVER=localhost
+DB_PORT=5432
+DB_USER=jaguar
+DB_PASSWORD=jaguar
+DB_NAME=jaguar
+DB_MAX_POOL_SIZE=15
+
 Only for verification on the mobile application side.
 curl -v -X POST -F "time=1504844512068" -F "client_id=1095369" -F "hash=YwUU8FwVNCquE07ldb2nlXV7fiBWcU8AidvVoRZCk0A=" http://localhost:8080/api/apps/verify
 
@@ -15,6 +22,8 @@ jaguar_cookie=619fb794-1f04-440c-9bbf-547a6918a4cb;Version=1;Comment="cookie for
 
 Request authorization code
 curl -v -L "http://localhost:8080/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME"
+
+curl -v -L "https://ashishraghavan.me/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME"
 
 curl -v -X POST --cookie "jaguar_cookie=a17870b6-4d8e-4097-a473-a9aa04f19135" -F "username=ashish.raghavan@google.com" -F "password=12345" -F "device_uid=GOOGLECHROME" -F "auth_flow=true" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" "http://localhost:8080/api/authorize/login"
 
@@ -54,4 +63,15 @@ For sending emails, we are using MailGun, with the username as 'api' and passwor
 API key for MailGun = key-910ae7b7d0722488c0951dfce679fe76
 
 API for registering a user.
+    public Response registerUser(final @FormDataParam("username") String username,
+                                 final @FormDataParam("password") String password,
+                                 final @FormDataParam("first_name") String firstName,
+                                 final @FormDataParam("last_name") String lastName,
+                                 final @FormDataParam("phone") String phone,
+                                 final @FormDataParam("device_uid") String deviceUid,
+                                 final @FormDataParam("model") String model,
+                                 final @FormDataParam("client_id") String clientIdStr,
+                                 final @FormDataParam("api_version") String api,
+                                 final @FormDataParam("notification_service_id") String notificationServiceId,
+curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=jaguar12345" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=TXA1673" -F "model=Nexus 6" -F "client_id="
 

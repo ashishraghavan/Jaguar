@@ -50,7 +50,7 @@ public class ApplicationService extends CommonService {
     @POST
     @Path("/verify")
     @PermitAll
-    @Transactional(readOnly = false)
+    @Transactional
     @Produces(MediaType.APPLICATION_JSON)
     public Response verify(final @Context ContainerRequestContext requestContext,
                            final @Context UriInfo uriInfo,
@@ -123,7 +123,7 @@ public class ApplicationService extends CommonService {
             final NewCookie cookie = new NewCookie(APP_COOKIE_NAME,
                     appCookieSession,
                     uriInfo.getPath(),
-                    "",
+                    String.valueOf(uriInfo.getBaseUri().getHost()),
                     "cookie for creating app session",
                     100,
                     false);

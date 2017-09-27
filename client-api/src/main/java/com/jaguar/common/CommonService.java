@@ -78,13 +78,4 @@ public class CommonService extends CommonConstants {
         }
         return authTokenized[1];
     }
-
-
-    protected String encryptClientSecret(final String secret) {
-        return secret;
-    }
-
-    protected String decryptClientSecret(final String secret) {
-        return secret;
-    }
 }

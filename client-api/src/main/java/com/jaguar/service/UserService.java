@@ -19,10 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
 import javax.annotation.security.PermitAll;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -340,6 +337,26 @@ public class UserService extends CommonService {
             return Response.accepted().build();
         } catch (Exception e) {
             serviceLogger.error("There was an error querying for the device, user or the device user with exception "+e.getLocalizedMessage());
+            return Response.serverError().build();
+        }
+    }
+
+    @GET
+    @Path("{email}")
+    @Transactional
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getUserDetails(@PathParam("email") final String userName, @Context ContainerRequestContext requestContext) {
+        //Get the current authorized user if present.
+        final IUser user = (IUser)(requestContext.getSecurityContext().getUserPrincipal());
+        if(user == null) {
+            serviceLogger.error("The user object obtained from the getUserPrincipal method call was null and unexpected. This was most likely because of an internal server error.");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build();
+        }
+        //return the user details as is.
+        try {
+            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user)).build();
+        } catch (Exception e) {
+            serviceLogger.error("An error occurred while serializing using the object mapper with exception message "+e.getLocalizedMessage());
             return Response.serverError().build();
         }
     }
