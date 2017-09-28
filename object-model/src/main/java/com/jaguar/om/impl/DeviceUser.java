@@ -10,7 +10,7 @@ import org.hibernate.annotations.ForeignKey;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "device_user",uniqueConstraints = {@UniqueConstraint(columnNames = {"device_id","user_id","account_id"})})
+@Table(name = "device_user",uniqueConstraints = {@UniqueConstraint(columnNames = {"device_id","user_id"})})
 @AttributeOverride(name = "id", column = @Column(name = "device_user_id"))
 public class DeviceUser extends CommonObject implements IDeviceUser {
 

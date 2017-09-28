@@ -23,7 +23,7 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
     private ResourceInfo resourceInfo;
 
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    public void filter(@Context ContainerRequestContext requestContext) throws IOException {
         final Method resourceMethod = resourceInfo.getResourceMethod();
         if(resourceMethod != null) {
             if(resourceMethod.getAnnotation(PermitAll.class) == null) {

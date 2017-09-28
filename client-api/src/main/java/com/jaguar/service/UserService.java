@@ -156,22 +156,8 @@ public class UserService extends CommonService {
                 device = deviceFromDB;
             }
 
-            //Add entry to the DeviceUser table.
-            IDeviceUser deviceUser = new DeviceUser(device,user);
-            IDeviceUser deviceUserFromDb = getDao().loadSingleFiltered(deviceUser,null,false);
-            //If there is an entry in the DeviceUser table, it means this user has already registered using this device.
-            //If we can find the user, then there most definitely needs to be an entry in the DeviceUser table as a user
-            //cannot register without a device.
-            if(deviceUserFromDb != null) {
-                serviceLogger.error("The user "+user.getEmail()+" has already registered on the device with uid "+device.getDeviceUId());
-                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The user "+user.getEmail()+" has already registered on the device with uid "
-                                +device.getDeviceUId()).build()).build();
-            }
-
-            //save the device user combination but with active flag set to false.
-            deviceUser.setActive(false);
-            getDao().save(deviceUser);
+            //Before attempting to save the DeviceUser, we have to save the User and the Device,
+            //since the device_id and user_id are being used to get the DeviceUser.
             //Set user fields
             if(!Strings.isNullOrEmpty(firstName)) {
                 user.setFirstName(firstName);
@@ -185,9 +171,30 @@ public class UserService extends CommonService {
             final String fullName = (Strings.isNullOrEmpty(user.getFirstName()) ? "" : user.getFirstName().trim()) +
                     (Strings.isNullOrEmpty(user.getLastName()) ? "" : user.getLastName().trim());
             user.setName(fullName);
+            user.setPassword(password);
             //Set the user active to false until the user confirms by using either the phone or email
             //method of verification.
             user.setActive(false);
+            user = getDao().save(user);
+            device.setUser(user);
+            device.setActive(false);
+            device = getDao().save(device);
+
+            //Add entry to the DeviceUser table.
+            IDeviceUser deviceUser = new DeviceUser(device,user);
+            deviceUser.setActive(false);
+            IDeviceUser deviceUserFromDb = getDao().loadSingleFiltered(deviceUser,null,false);
+            //If there is an entry in the DeviceUser table, it means this user has already registered using this device.
+            //If we can find the user, then there most definitely needs to be an entry in the DeviceUser table as a user
+            //cannot register without a device.
+            if(deviceUserFromDb != null) {
+                serviceLogger.error("The user "+user.getEmail()+" has already registered on the device with uid "+device.getDeviceUId());
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The user "+user.getEmail()+" has already registered on the device with uid "
+                                +device.getDeviceUId()).build()).build();
+            }
+            //save the device user combination but with active flag set to false.
+            getDao().save(deviceUser);
 
             //If the user has a phone number, use that for verification. If not, use email.
             //For now, we are using only email to send verification links. Once, the SMS
@@ -198,16 +205,18 @@ public class UserService extends CommonService {
             //This code will be valid only for 10 minutes. i.e the user has to click this
             //verification link within 10 minutes after they register.
             final String verificationUri = requestContext.getUriInfo().getBaseUri()
-                    + "/" + "user/verify?email="+user.getEmail()+ "&" +"code=" + verificationCode + "&" + "device_id="+device.getDeviceUId();
+                    + "user/verify?email="+user.getEmail()+ "&" +"code=" + verificationCode + "&" + "device_uid="+device.getDeviceUId();
             final Email email = EmailManager.emailBuilder().subject("Verify your registration")
                     .body(String.format(VERIFICATION_EMAIL,verificationUri)).to(user.getEmail()).build();
             emailManager.sendEmail(email);
             //Only after we have sent the email, we add the code to the in memory cache.
             getCacheManager().getEmailVerificationCache().put(verificationCode,user);
-            return Response.accepted().build();
+            return Response.ok(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user)).build();
         } catch (Exception e) {
             serviceLogger.error("There was error querying the application using the client id "+clientIdStr+" with exception "+e.getLocalizedMessage());
-            return Response.serverError().build();
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR)
+                            .withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
         }
     }
 
@@ -221,17 +230,20 @@ public class UserService extends CommonService {
         //Sanity checks. Any missing query parameter will result in an internal server error.
         if(Strings.isNullOrEmpty(email)) {
             serviceLogger.error("The parameter email was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error.");
-            return Response.serverError().build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("email").build()).build();
         }
 
         if(Strings.isNullOrEmpty(code)) {
             serviceLogger.error("The parameter code was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error");
-            return Response.serverError().build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("code").build()).build();
         }
 
         if(Strings.isNullOrEmpty(deviceId)) {
             serviceLogger.error("The parameter deviceId was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error");
-            return Response.serverError().build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("device_uid").build()).build();
         }
 
         //Check if the authorization code generated during the previous step is still valid.
@@ -242,28 +254,33 @@ public class UserService extends CommonService {
         }
 
         //Check if the device user from the DeviceUser table is present.
-        final String[] ignoreProperties = new String[]{"active"};
         IDevice device = new Device(verifiedUser.getAccount(),deviceId);
+        device.setActive(false);
         try {
-            device = getDao().loadSingleFiltered(device,ignoreProperties,false);
+            device = getDao().loadSingleFiltered(device,null,false);
             if(device == null) {
                 serviceLogger.error("The device id from the query parameter is not correct. This should not have happened!");
-                return Response.serverError().build();
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
             }
             IDeviceUser deviceUser = new DeviceUser(device,verifiedUser);
-            deviceUser = getDao().loadSingleFiltered(deviceUser,ignoreProperties,false);
+            deviceUser.setActive(false);
+            deviceUser = getDao().loadSingleFiltered(deviceUser,null,false);
             if(deviceUser == null) {
                 serviceLogger.error("The device user entry was not found in the DeviceUser table. This should not have happened!");
-                return Response.serverError().build();
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
             }
             deviceUser.setActive(true);
             verifiedUser.setActive(true);
+            deviceUser = getDao().save(deviceUser);
+            getDao().save(verifiedUser);
             return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(deviceUser)).build();
         } catch (Exception e) {
             serviceLogger.error("An error occurred while querying for either DeviceUser or User with exception message "+e.getLocalizedMessage());
-            return Response.serverError().build();
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
         }
-
     }
 
     /***
@@ -271,8 +288,9 @@ public class UserService extends CommonService {
      * @param userName The email/username of the client as a query param.
      * @param deviceId The {@link Device#deviceUid} of the user as a query param.
      * @return {@link Response#ok()} with the link sent to the email of this user, an error otherwise.
+     * curl -v "http://localhost:8080/api/user/resendlink?email=ashishraghavan13687@gmail.com&device_uid=iOS6sPlus-A1687&client_id=1095369"
      */
-    @Path("/resendLink")
+    @Path("/resendlink")
     @Transactional
     @PermitAll
     public Response resendEmailVerificationLink(final @QueryParam("email") String userName,
@@ -281,15 +299,18 @@ public class UserService extends CommonService {
                                                 final @Context ContainerRequestContext requestContext) {
         if(Strings.isNullOrEmpty(userName)) {
             serviceLogger.error("No email parameter was received in the query. This should not have happened!");
-            return Response.serverError().build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("email").build()).build();
         }
         if(Strings.isNullOrEmpty(deviceId)) {
             serviceLogger.error("No device id was received in the query. This should not have happened!");
-            return Response.serverError().build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("device_uid").build()).build();
         }
         if(Strings.isNullOrEmpty(clientIdStr) || !NumberUtils.isCreatable(clientIdStr)) {
             serviceLogger.error("No client id was received in the query or the format for the client id was incorrect. This should not have happened!");
-            return Response.serverError().build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("client_id").build()).build();
         }
         final URI uri = requestContext.getUriInfo().getBaseUri();
         try {
@@ -302,14 +323,16 @@ public class UserService extends CommonService {
             }
             //We need to query only for user's that this application belongs to.
             IUser user = new User(application.getAccount(),userName);
-            user = getDao().loadSingleFiltered(user,USER_IGNORE_PROPERTIES,false);
+            user.setActive(false);
+            user = getDao().loadSingleFiltered(user,null,false);
             if(user == null) {
                 serviceLogger.error("There is not user with the user name "+userName+ " for the account ");
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
                         .withMessage("There is no user with the username "+userName).build()).build();
             }
             IDevice device = new Device(application.getAccount(),deviceId);
-            device = getDao().loadSingleFiltered(device,DEVICE_IGNORE_PROPERTIES,false);
+            device.setActive(false);
+            device = getDao().loadSingleFiltered(device,null,false);
             if(device == null) {
                 serviceLogger.error("There is no device with the device uid "+deviceId+" for the account "+application.getAccount().getAccountName());
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
@@ -317,7 +340,8 @@ public class UserService extends CommonService {
             }
             //Now get the DeviceUser.
             IDeviceUser deviceUser = new DeviceUser(device,user);
-            deviceUser = getDao().loadSingleFiltered(deviceUser,DEVICE_USER_IGNORE_PROPERTIES,false);
+            deviceUser.setActive(false);
+            deviceUser = getDao().loadSingleFiltered(deviceUser,null,false);
             if(deviceUser == null) {
                 serviceLogger.error("There  is no combination of the device "+deviceId+" and the user "+userName);
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
@@ -328,16 +352,18 @@ public class UserService extends CommonService {
             //This code will be valid only for 10 minutes. i.e the user has to click this
             //verification link within 10 minutes after they register.
             final String verificationUri = uri
-                    + "/" + "user/verify?email="+user.getEmail()+ "&" +"code=" + verificationCode + "&" + "device_id="+device.getDeviceUId();
+                    + "user/verify?email="+user.getEmail()+ "&" +"code=" + verificationCode + "&" + "device_uid="+device.getDeviceUId();
             final Email email = EmailManager.emailBuilder().subject("Verify your registration")
                     .body(String.format(VERIFICATION_EMAIL,verificationUri)).to(user.getEmail()).build();
             emailManager.sendEmail(email);
             //Only after we have sent the email, we add the code to the in memory cache.
             getCacheManager().getEmailVerificationCache().put(verificationCode,user);
-            return Response.accepted().build();
+            return Response.ok(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user)).build();
         } catch (Exception e) {
             serviceLogger.error("There was an error querying for the device, user or the device user with exception "+e.getLocalizedMessage());
-            return Response.serverError().build();
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR)
+                            .withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
         }
     }
 
@@ -357,7 +383,9 @@ public class UserService extends CommonService {
             return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user)).build();
         } catch (Exception e) {
             serviceLogger.error("An error occurred while serializing using the object mapper with exception message "+e.getLocalizedMessage());
-            return Response.serverError().build();
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR)
+                    .withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
         }
     }
 }
