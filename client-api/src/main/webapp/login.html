@@ -105,7 +105,7 @@
                     //Any other case. The server will re-direct
                     //the user to the consent.html page after a
                     //successful authentication.
-                    console.log('Authentication failed with message');
+                    console.log('Authentication failed with message '+loginHttpRequest);
                     //parse the error JSON.
                     var errorJSON = JSON.parse(this.responseText);
                     if(errorJSON['errorMessage'] === '' || errorJSON['errorMessage'] === undefined) {
@@ -115,6 +115,7 @@
                         //Display what error occurred from the server side.
                         alert(errorJSON['errorMessage']);
                     }
+                    return;
                 }
                 //We get the location property from the response
                 //and call that URL instead of re-directing from the server.

@@ -58,7 +58,8 @@ public class CommonService extends CommonConstants {
                 return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(ErrorMessage.builder()
                         .withErrorCode(ErrorMessage.FREE_FORM).withMessage(errorMessage).build());
             }
-            return exception.getLocalizedMessage();
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage(exception.getLocalizedMessage()).build());
         } catch (Exception e) {
             serviceLogger.error("An exception occurred while sending exception details!");
             return errorMessage;
