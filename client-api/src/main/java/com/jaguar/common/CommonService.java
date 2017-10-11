@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.jaguar.cache.ICacheManager;
 import com.jaguar.exception.ErrorMessage;
-import com.jaguar.om.CommonConstants;
-import com.jaguar.om.IBaseDAO;
+import com.jaguar.om.*;
+import com.jaguar.om.impl.Role;
+import com.jaguar.om.impl.UserRole;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
 @Component
@@ -21,7 +23,7 @@ public class CommonService extends CommonConstants {
     protected final Gson gson = new Gson();
     protected ICacheManager cacheManager;
     private final String classNameHashCodeTemplate = "Classname/hashcode : %s / %d";
-    protected final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false)
+    protected static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false)
             .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,false);
     protected static final String[] USER_IGNORE_PROPERTIES = new String[]{"active"};
     protected static final String[] DEVICE_IGNORE_PROPERTIES = USER_IGNORE_PROPERTIES;
@@ -78,5 +80,35 @@ public class CommonService extends CommonConstants {
             return null;
         }
         return authTokenized[1];
+    }
+
+    @Transactional
+    protected IUserRole getUserRole(final IUser user,final IRole role) {
+        if(user == null || role == null) {
+            serviceLogger.error("User & Role required to be non-null for this request");
+            return null;
+        }
+        try {
+            final IUserRole userRole = new UserRole(user,role);
+            return getDao().loadSingleFiltered(userRole,null,false);
+        } catch (Exception e) {
+            serviceLogger.error("There was an error querying for UserRole with the message "+e.getLocalizedMessage());
+            return null;
+        }
+    }
+
+    @Transactional
+    protected IRole getRoleByName(final String roleName) {
+        if(Strings.isNullOrEmpty(roleName)) {
+            serviceLogger.error("Null/empty role name.");
+            return null;
+        }
+        final IRole role = new Role(roleName);
+        try {
+            return getDao().loadSingleFiltered(role,null,false);
+        } catch (Exception e) {
+            serviceLogger.error("There was an error querying the role by name "+roleName+" with the exception "+e.getLocalizedMessage());
+            return null;
+        }
     }
 }

@@ -36,7 +36,7 @@ public class CacheManager implements ICacheManager {
             .newBuilder().expireAfterWrite(REFRESH_TOKEN_DURATION,TimeUnit.DAYS).recordStats().build();
     private final Cache<String,IUser> userAuthorizationCache = CacheBuilder
             .newBuilder().expireAfterWrite(AUTHORIZATION_CODE_DURATION,TimeUnit.MINUTES).recordStats().build();
-    private final Cache<String,IUser> emailVerificationCache = CacheBuilder
+    private final Cache<String,IUser> userVerificationCache = CacheBuilder
             .newBuilder().expireAfterWrite(VERIFICATION_CODE_DURATION,TimeUnit.MINUTES).recordStats().build();
 
     @Override
@@ -65,8 +65,8 @@ public class CacheManager implements ICacheManager {
     }
 
     @Override
-    public Cache<String, IUser> getEmailVerificationCache() {
-        return this.emailVerificationCache;
+    public Cache<String, IUser> getUserVerificationCache() {
+        return this.userVerificationCache;
     }
 
     @SuppressWarnings("unused")

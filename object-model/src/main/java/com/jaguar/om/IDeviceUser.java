@@ -6,6 +6,4 @@ public interface IDeviceUser extends ICommonObject{
     void setUser(final IUser user);
     IDevice getDevice();
     IUser getUser();
-    void setAccount(final IAccount account);
-    IAccount getAccount();
 }

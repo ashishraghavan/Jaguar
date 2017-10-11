@@ -80,7 +80,6 @@ public class User extends CommonObject implements IUser,Principal{
     @LazyCollection(LazyCollectionOption.EXTRA)
     private Set<IDevice> devices;
 
-
     public String getName() {
         return this.name;
     }

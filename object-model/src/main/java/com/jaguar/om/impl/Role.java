@@ -1,8 +1,6 @@
 package com.jaguar.om.impl;
 
 
-import com.jaguar.om.IAccount;
-import com.jaguar.om.IAccountable;
 import com.jaguar.om.IRole;
 
 import javax.persistence.*;

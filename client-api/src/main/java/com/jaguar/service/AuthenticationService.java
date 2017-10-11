@@ -151,7 +151,8 @@ public class AuthenticationService extends CommonService {
 
             //Check the UserDevice table to see if we find a correct user -> device match.
             IDeviceUser deviceUser = new DeviceUser(device, user);
-            deviceUser.setAccount(application.getAccount());
+            //load only active devices.
+            deviceUser.setActive(true);
             final IDeviceUser deviceUserFromDB = getDao().loadSingleFiltered(deviceUser, null, false);
             if (deviceUserFromDB == null) {
                 //This device has not been assoicated with this user.

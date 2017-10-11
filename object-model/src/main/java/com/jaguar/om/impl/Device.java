@@ -1,6 +1,7 @@
 package com.jaguar.om.impl;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.IAccount;
 import com.jaguar.om.IDevice;
 import com.jaguar.om.IDeviceApplication;
@@ -33,6 +34,11 @@ public class Device extends CommonObject implements IDevice {
         this.user = user;
     }
 
+    public Device(final String deviceUid,final IUser user) {
+        this.deviceUid = deviceUid;
+        this.user = user;
+    }
+
     public Device(final IAccount account, final String deviceUid, final IUser user, final String model,
                   final Integer apiVersion) {
         this(account,deviceUid,user);
@@ -45,6 +51,7 @@ public class Device extends CommonObject implements IDevice {
     @ForeignKey(name = "fk_device_account_id")
     private IAccount account;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "application",targetEntity = DeviceApplication.class,fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private Set<IDeviceApplication> deviceApplications;
 
@@ -55,7 +62,7 @@ public class Device extends CommonObject implements IDevice {
     private String model;
 
     @ManyToOne(targetEntity = User.class,optional = false,cascade = CascadeType.ALL)
-    @JoinColumn(name = "user_id",insertable = true,updatable = true,nullable = false)
+    @JoinColumn(name = "user_id",nullable = false)
     @ForeignKey(name = "fk_device_user_id")
     private IUser user;
 

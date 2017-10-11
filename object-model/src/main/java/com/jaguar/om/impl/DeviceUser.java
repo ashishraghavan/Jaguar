@@ -20,7 +20,6 @@ public class DeviceUser extends CommonObject implements IDeviceUser {
         this();
         this.device = device;
         this.user = user;
-        this.account = this.user.getAccount();
     }
 
     @ManyToOne(targetEntity = Device.class,optional = false)
@@ -32,11 +31,6 @@ public class DeviceUser extends CommonObject implements IDeviceUser {
     @JoinColumn(name = "user_id", insertable = true,updatable = true,nullable = false)
     @ForeignKey(name = "fk_device_user_user_id")
     private IUser user;
-
-    @ManyToOne(targetEntity = Account.class,optional = false)
-    @JoinColumn(name = "account_id",insertable = true,updatable = true,nullable = false)
-    @ForeignKey(name = "fk_device_user_account_id")
-    private IAccount account;
 
     @Override
     public void setDevice(IDevice device) {
@@ -56,15 +50,5 @@ public class DeviceUser extends CommonObject implements IDeviceUser {
     @Override
     public IUser getUser() {
         return this.user;
-    }
-
-    @Override
-    public void setAccount(IAccount account) {
-        this.account = account;
-    }
-
-    @Override
-    public IAccount getAccount() {
-        return this.account;
     }
 }

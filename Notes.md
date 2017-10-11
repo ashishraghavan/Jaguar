@@ -20,6 +20,15 @@ jaguar_cookie=619fb794-1f04-440c-9bbf-547a6918a4cb;Version=1;Comment="cookie for
 
 {"account":{"accountName":"Jaguar","city":"Long Is City","country":"USA","state":"NY","postalCode":"11101","creationDate":"Aug 28, 2017 10:24:24 PM","modificationDate":"Aug 28, 2017 10:24:24 PM","active":true,"id":1},"name":"AppSense","redirectUri":"http://localhost:8080/api/client","clientId":1903475,"clientSecret":"7a5e9fc6-290b-4c97-8386-67237414f469","versionCode":"1.0","packageName":"com.jaguar.jaguarxf","applicationType":"MOBILE_APP","applicationRoles":[],"creationDate":"Aug 28, 2017 10:24:24 PM","modificationDate":"Aug 28, 2017 10:24:24 PM","active":true,"id":1}
 
+Register a user and device.
+curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "role=seller" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=iOS6sPlus-A1687" -F "model=iPhone6sPlus" -F "client_id=1095369" -F "api=15" -F "role=seller" "http://localhost:8080/client/api/user"
+
+Register another user with same device
+curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "role=seller" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=Nexus6-XT2048" -F "model=Nexus 6" -F "client_id=1095369" -F "api=17" "http://localhost:8080/client/api/user"
+
+Resend verification link
+curl -v "http://localhost:8080/client/api/user/resendlink?email=ashishraghavan13687@gmail.com&device_uid=iOS6sPlus-A1687&client_id=1095369&role=seller"
+
 Request authorization code
 curl -v -L "http://localhost:8080/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME"
 

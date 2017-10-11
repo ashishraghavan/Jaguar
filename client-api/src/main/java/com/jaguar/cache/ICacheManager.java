@@ -15,5 +15,5 @@ public interface ICacheManager {
     //Cache for authorization flow
     Cache<String,IUser> getUserAuthorizationCache();
     //Cache to validate email verification
-    Cache<String,IUser> getEmailVerificationCache();
+    Cache<String,IUser> getUserVerificationCache();
 }

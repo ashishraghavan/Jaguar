@@ -1,7 +1,7 @@
 package com.jaguar.exception;
 
 
-import com.google.gson.Gson;
+import com.jaguar.common.CommonService;
 import jersey.repackaged.com.google.common.collect.ImmutableMap;
 import org.apache.log4j.Logger;
 import org.springframework.util.StringUtils;
@@ -9,12 +9,13 @@ import org.testng.util.Strings;
 
 import java.util.Map;
 
-public class ErrorMessage {
+public class ErrorMessage extends CommonService {
 
     private Integer errorCode;
     private String errorMessage;
     private static final Logger logger = Logger.getLogger(ErrorMessage.class.getSimpleName());
-    private static final Gson gson = new Gson();
+    private static final String serverErrorJSON = "{\"errorCode\":\"500\"," +
+            "\"errorMessage\":\"The server encountered an error while processing this request\"}";
 
     /* Error code declaration */
     public static final int ARGUMENT_REQUIRED = 1;
@@ -105,7 +106,13 @@ public class ErrorMessage {
             }
 
             //We can write a different method which does not convert to JSON always.
-            return gson.toJson(new ErrorMessage(this.errorCode,this.substitutedMessage));
+            try {
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ErrorMessage(this.errorCode,this.substitutedMessage));
+            } catch (Exception e) {
+                logger.error("There was an error serializing the ErrorMessage object with message "+this.substitutedMessage+" and errorCode "+this.errorCode+" with exception "+e.getLocalizedMessage());
+                logger.info("Sending an internal server error response.");
+                return serverErrorJSON;
+            }
         }
 
         private String stringifyArray(final String[] strArray) {

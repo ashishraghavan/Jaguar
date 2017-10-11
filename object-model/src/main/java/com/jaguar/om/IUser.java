@@ -22,5 +22,4 @@ public interface IUser extends ICommonObject,Principal {
     Set<IDevice> getDevices();
     void setPhoneNumber(final String phoneNumber);
     String getPhoneNumber();
-
 }

@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.springframework.test.annotation.Rollback;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -36,9 +37,18 @@ public class UserTest extends BaseTestCase {
         for(String formKey : formMap.keySet()) {
              userEntityBuilder.addTextBody(formKey,formMap.get(formKey));
         }
-        final HttpPost httpPost = new HttpPost("http://localhost:8080/api/user/");
+        final HttpPost httpPost = new HttpPost("http://localhost:8080/client/api/user/");
         httpPost.setEntity(userEntityBuilder.build());
         final CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
-        Assert.assertTrue(httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_ACCEPTED);
+        Assert.assertTrue(httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK);
+        final String response = EntityUtils.toString(httpResponse.getEntity());
+        final Map<String,Object> responseMap = mapper.readValue(response,typeMapStringObject);
+        Assert.assertNotNull(responseMap.get("link"));
+    }
+
+    @Test(dependsOnMethods = "registerUser")
+    @Rollback(value = false)
+    public void verifyRegistration() throws Exception {
+
     }
 }
