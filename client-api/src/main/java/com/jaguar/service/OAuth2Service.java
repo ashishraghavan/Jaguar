@@ -201,6 +201,7 @@ public class OAuth2Service extends CommonService {
             }
         }
 
+        final String scheme = getScheme(requestContext);
         final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
         //If the current device is a desktop, we generate a unique id and append
         //it along with the url. If this is a mobile device (ANDROID), the device
@@ -226,7 +227,8 @@ public class OAuth2Service extends CommonService {
                 //must be sent the role list as in the code block below.
                 //Append the re-direct URI along with the login url.
                 //We don't allow custom login pages. It has to be a login page that we serve.
-                loginUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "login.html" + authQueryParams);
+                loginUri = URI.create(scheme + "://" + absolutePath.getAuthority() + context + files + "/" + "login.html" + authQueryParams);
+                serviceLogger.info("Generated login link:"+loginUri);
                 return Response.temporaryRedirect(loginUri).location(loginUri).build();
             } catch (Exception e) {
                 serviceLogger.error("An error occurred while re-directing to the login page with the message "+e.getLocalizedMessage());
@@ -238,7 +240,8 @@ public class OAuth2Service extends CommonService {
 
         //
         //Take the user to the consent page since the user has authenticated.
-        final URI consentUri = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
+        final URI consentUri = URI.create(scheme + "://" + absolutePath.getAuthority() + context + files + "/" + "consent.html" + authQueryParams);
+        serviceLogger.info("Generated consent URI:"+consentUri);
         return Response.temporaryRedirect(consentUri).location(consentUri).build();
     }
 

@@ -38,7 +38,7 @@ public class EmailManager extends CommonObject implements IEmailManager {
     private static final String CONTENT_TRANSFER_ENCODING_VALUE = "8bit";
 
 
-    public static EmailBuilder emailBuilder() {
+    public static EmailBuilder builder() {
         return new EmailBuilder();
     }
 
@@ -71,8 +71,13 @@ public class EmailManager extends CommonObject implements IEmailManager {
     }
 
     @Override
-    public void sendNotificationMessage(Object notificationMessage) {
-
+    public void sendNotificationMessage(com.jaguar.om.Message notificationMessage) throws Exception {
+        if(!(notificationMessage instanceof Email)) {
+            emailLogger.error("Expected notification message instance to be of type "+Email.class.getSimpleName()+", but found "+notificationMessage.getClass().getSimpleName());
+            throw new IllegalArgumentException("\"Expected notification message instance to be of type "+Email.class.getSimpleName()+", but found "+notificationMessage.getClass().getSimpleName());
+        }
+        final Email email = (Email)notificationMessage;
+        sendEmail(email);
     }
 
     public static class EmailBuilder {
@@ -119,7 +124,7 @@ public class EmailManager extends CommonObject implements IEmailManager {
 
     public static void main(String[] args) throws Exception {
         final IEmailManager emailManager = new EmailManager();
-        final Email email = EmailManager.emailBuilder()
+        final Email email = EmailManager.builder()
                 .body("This is just a test email from ashishraghavan.me domain using mailgun!")
                 .to("ashish13687@icloud.com")
                 .subject("Test Email")

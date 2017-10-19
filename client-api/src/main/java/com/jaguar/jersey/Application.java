@@ -6,15 +6,12 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.mvc.MvcFeature;
 import org.springframework.web.filter.RequestContextFilter;
 
-import javax.ws.rs.ApplicationPath;
-
 
 /**
  * The jersey application class
  * required as the init param
  * for a servlet.
  */
-@ApplicationPath("/api")
 public class Application extends ResourceConfig {
 
     public Application(){

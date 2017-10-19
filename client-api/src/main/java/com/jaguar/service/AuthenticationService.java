@@ -3,12 +3,10 @@ package com.jaguar.service;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.om.*;
-import com.jaguar.om.notification.EmailManager;
-import com.jaguar.om.notification.SMSManager;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.Device;
-import com.jaguar.om.impl.DeviceUser;
 import com.jaguar.om.impl.User;
+import com.jaguar.om.notification.EmailManager;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -57,11 +55,14 @@ public class AuthenticationService extends CommonService {
     public Response login(@Context final ContainerRequestContext requestContext,
                           @FormDataParam("username") final String username,
                           @FormDataParam("password") final String password,
-                          @FormDataParam("device_uid") final String deviceId,
+                          @FormDataParam("device_uid") final String deviceUid,
                           @FormDataParam("auth_flow") final String isAuthFlow,
                           @FormDataParam("redirect_uri") final String redirectUri,
                           @FormDataParam("client_id") final String clientIdStr,
-                          @FormDataParam("scopes") final String scopes) {
+                          @FormDataParam("scopes") final String scopes,
+                          @FormDataParam("api") final String api,
+                          @FormDataParam("model") final String model,
+                          @FormDataParam("notification_service_id") final String notificationServiceId) {
         if (Strings.isNullOrEmpty(username)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -114,69 +115,110 @@ public class AuthenticationService extends CommonService {
             application = getDao().load(application.getClass(), application.getId());
             //If this application is a mobile application and no device_id was
             //supplied, it is an error.
-            if (Strings.isNullOrEmpty(deviceId)) {
+            if (Strings.isNullOrEmpty(deviceUid)) {
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                         .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                         .withMessage("device_uid")
                         .build())
                         .build();
             }
-            //Get the device first.
-            IDevice device = new Device(application.getAccount(), deviceId);
-            device = getDao().loadSingleFiltered(device, null, false);
-            if (device == null) {
-                //There are two cases. Either this user is logging in
-                //using a different device, or this user hasn't registered yet.
-                //Since the device is null, this device is non-existent.
-                return Response.status(HttpStatus.BAD_REQUEST.value()).
-                        entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
-                                .withMessage("The device " + deviceId + " doesn't seem to be a valid device").build()).build();
-            }
-            //Get the user now.
+            //Get the user first.
             IUser user = new User(application.getAccount(), username);
             user = getDao().loadSingleFiltered(user, null, false);
             if (user == null) {
                 //We did not find this user under this account.
                 return Response.status(HttpStatus.BAD_REQUEST.value())
                         .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND)
-                                .withMessage("The device with id " + deviceId).build()).build();
+                                .withMessage("The device with id " + deviceUid).build()).build();
             }
-
             //Check if this user is active.
             if(!user.isActive()) {
                 serviceLogger.error("The user with the email "+user.getEmail()+" has not verified and is still inactive");
                 return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
                         .withErrorCode(ErrorMessage.EXCEPTION).withMessage("User needs to be verify either using email or phone").build()).build();
             }
-
+            //Get the device now that is scoped to a user.
+            IDevice device = new Device(deviceUid,user);
+            final IDevice deviceFromDB = getDao().loadSingleFiltered(device, null, false);
+            boolean isDeviceCreationRequired = false;
+            if (deviceFromDB == null) {
+                //There are two cases. Either this user is logging in
+                //using a different device, or this user hasn't registered yet.
+                //Since the device is null, this device is non-existent.
+                serviceLogger.info("The user "+user.getEmail()+" is not mapped to the device with deviceUid "+deviceUid);
+                isDeviceCreationRequired = true;
+            }
             //Check the UserDevice table to see if we find a correct user -> device match.
-            IDeviceUser deviceUser = new DeviceUser(device, user);
-            //load only active devices.
-            deviceUser.setActive(true);
-            final IDeviceUser deviceUserFromDB = getDao().loadSingleFiltered(deviceUser, null, false);
-            if (deviceUserFromDB == null) {
+            if(isDeviceCreationRequired) {
+                //TODO Only if the application is a mobile application, do the following.
+                //Check if all required parameters for device creation are present (api,model etc)
+                if(Strings.isNullOrEmpty(api)) {
+                    serviceLogger.error("The device "+deviceUid
+                            +" is not registered with this user. An api version of the application is needed to login into this device");
+                    return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The device "+deviceUid
+                                    +" is not registered with this user. An api version of the application is needed to login into this device").build()).build();
+                }
+                if(Strings.isNullOrEmpty(model)) {
+                    serviceLogger.error("The device "+deviceUid
+                            +" is not registered with this user. A model name of the device is needed to login into this device");
+                    return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The device "+deviceUid
+                                    +" is not registered with this user. A model name of the device is needed to login into this device").build()).build();
+                }
+                //API version needs to be a number.
+                if(!NumberUtils.isCreatable(api)) {
+                    serviceLogger.error("The api version "+api+" is not a number");
+                    return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage(api,"123...").build()).build();
+                }
+                if(!Strings.isNullOrEmpty(notificationServiceId)) {
+                    device.setNotificationServiceId(notificationServiceId);
+                }
+                //If a device creation is required, we create it first
+                //and then query for the DeviceUser table.
                 //This device has not been assoicated with this user.
                 //The user is probably logging in with a different device
                 //for the same application.
                 //Before saving this device user, we have to make sure, it is
                 //indeed this user who is signing through a separate device.
                 //Maybe generate a one time passcode and send to their provided phone number.
+                device.setModel(model);
+                device.setApiVersion(Integer.parseInt(api));
+                device.setActive(true);
+                getDao().save(device);
+                //Since we have associated a device with this user at login time
+                //we sent a notification either on the mobile app (if it's a mobile app) or web notification.
+                //Or an SMS.
+                final String deviceRevocationLink = "This is just a test for device revocation";
                 final INotificationManager notificationManager;
+                final Message message;
+                //TODO Change SMS code block to use SMSManager.
                 if (!Strings.isNullOrEmpty(user.getPhoneNumber())) {
                     //We prefer to send an SMS if we have the phone number.
                     //construct the SMS message.
-                    notificationManager = new SMSManager();
+                    /*notificationManager = new SMSManager();
+                    message = SMSManager.smsBuilder()
+                            .messageBody(deviceRevocationLink)
+                            .fromPhone("+14082216275")
+                            .toPhone(user.getPhoneNumber())
+                            .build();*/
+                    notificationManager = new EmailManager();
+                    message = EmailManager.builder()
+                            .body(deviceRevocationLink)
+                            .subject("Test Device Revocation")
+                            .to(user.getEmail()).build();
                 } else {
                     //Send an email through our SMTP server.
                     //Construct the EMail message.
                     notificationManager = new EmailManager();
+                    message = EmailManager.builder()
+                            .body(deviceRevocationLink)
+                            .subject("Test Device Revocation")
+                            .to(user.getEmail()).build();
                 }
-                final Object dummyObject = new Object();
-                notificationManager.sendNotificationMessage(dummyObject);
-                //Once we have verified, create any entry in the UserDevice table.
-                getDao().save(deviceUser);
+                notificationManager.sendNotificationMessage(message);
             }
-
             //Do the actual authentication.
             user.setPassword(password);
             user = getDao().loadSingleFiltered(user,null,false);
@@ -191,6 +233,7 @@ public class AuthenticationService extends CommonService {
                 isConsentFlow = Boolean.parseBoolean(isAuthFlow);
             }
 
+            final String scheme = getScheme(requestContext);
             //If this is the authorization flow (consent), we send the user to the redirection URI
             //with the authorization code appended to the URI.
             if(isConsentFlow) {
@@ -208,9 +251,9 @@ public class AuthenticationService extends CommonService {
                         + "&" + OAUTH2_FLOW + "=" +isAuthFlow
                         + "&" + CLIENT_ID + "=" +clientId
                         + "&" + AUTHORIZATION_CODE + "=" +authorizationCode
-                        + "&" + DEVICE_UID + "=" +deviceId
+                        + "&" + DEVICE_UID + "=" + deviceUid
                         + "&" + SCOPES + "=" +scopes;
-                final URI consentURI = URI.create(absolutePath.getScheme() + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
+                final URI consentURI = URI.create(scheme + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
                 return Response.seeOther(consentURI).location(consentURI).build();
             }
 

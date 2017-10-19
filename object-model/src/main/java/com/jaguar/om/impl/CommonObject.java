@@ -19,7 +19,7 @@ public abstract class CommonObject implements ICommonObject {
     @Temporal(TemporalType.TIMESTAMP)
     private Date modificationDate;
 
-    @Column(name = "active",nullable = false,insertable = true,updatable = true,columnDefinition = "boolean default false")
+    @Column(name = "active",nullable = false,insertable = true,updatable = true,columnDefinition = "boolean default true")
     private boolean active;
 
     @Id

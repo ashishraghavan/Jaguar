@@ -1,6 +1,7 @@
 package com.jaguar.om.notification;
 
 import com.jaguar.om.ISMSManager;
+import com.jaguar.om.Message;
 import com.jaguar.om.impl.CommonObject;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -12,8 +13,13 @@ public class SMSManager extends CommonObject implements ISMSManager {
     private static final Logger smsLogger = Logger.getLogger(SMSManager.class.getSimpleName());
 
     @Override
-    public void sendNotificationMessage(Object notificationMessage) {
-
+    public void sendNotificationMessage(Message notificationMessage) throws Exception {
+        if(!(notificationMessage instanceof SMS)) {
+            smsLogger.error("Expected notificationMessage to be an instance of "+SMS.class.getSimpleName()+" but found "+notificationMessage.getClass().getSimpleName());
+            throw new IllegalArgumentException("Expected notificationMessage to be an instance of "+SMS.class.getSimpleName() +"but found "+notificationMessage.getClass().getSimpleName());
+        }
+        final SMS sms = (SMS)notificationMessage;
+        sendSMS(sms);
     }
 
     @Override

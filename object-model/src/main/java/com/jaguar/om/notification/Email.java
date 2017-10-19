@@ -1,6 +1,8 @@
 package com.jaguar.om.notification;
 
-public class Email {
+import com.jaguar.om.Message;
+
+public class Email extends Message {
     private String to;
     private String subject;
     private String body;

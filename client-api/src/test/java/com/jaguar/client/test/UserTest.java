@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-@Test
+@Test(enabled = false)
 public class UserTest extends BaseTestCase {
 
     private final Map<String,String> formMap = ImmutableMap.<String,String>builder()
@@ -29,7 +29,7 @@ public class UserTest extends BaseTestCase {
             .put("client_id","1095369")
             .put("api_version","15")
             .build();
-    @Test
+    @Test(enabled = false)
     @Rollback(value = false)
     public void registerUser() throws Exception {
         final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
@@ -46,7 +46,7 @@ public class UserTest extends BaseTestCase {
         Assert.assertNotNull(responseMap.get("link"));
     }
 
-    @Test(dependsOnMethods = "registerUser")
+    @Test(dependsOnMethods = "registerUser",enabled = false)
     @Rollback(value = false)
     public void verifyRegistration() throws Exception {
 

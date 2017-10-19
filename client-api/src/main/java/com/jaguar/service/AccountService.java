@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 @Component
@@ -14,7 +16,8 @@ import javax.ws.rs.core.Response;
 public class AccountService extends CommonService {
 
     @POST
-    @Transactional(readOnly = false)
+    @Transactional
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_HTML})
     public Response createAccount() {
         try {
             return Response.ok("It works").build();

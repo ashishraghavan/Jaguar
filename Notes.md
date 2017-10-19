@@ -3,7 +3,8 @@ If there was no bi-directional relationship between User and Device, deleting a 
 When not using the jersey-spring3 integration dependency, the setter method with @Autowired annotation is not called when a service call is made (annotated with @Component). On adding the jersey-spring3 dependency and excluding a bunch of dependencies causing error, the setter method for dao is called twice in the service class (ApplicationService.java). The first one when the server container is initiliazed, which is normal as the setter injection is used by spring. However, on calling any API (service call), this is one of the major difference : The ApplicationService as initialized by Spring and later on by jersey have different hashcodes. I don't know why would this happen. And if the class has already been loaded once, why would there be a need for Jersey and Spring to load these classes separately? I can understand if the classloader being used for this is different.
 
 For running the build.
-mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15" clean install
+To skip tests : -Dmaven.test.skip=true=true
+mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15"  clean install
 
 DB_SERVER=localhost
 DB_PORT=5432
@@ -30,13 +31,19 @@ Resend verification link
 curl -v "http://localhost:8080/client/api/user/resendlink?email=ashishraghavan13687@gmail.com&device_uid=iOS6sPlus-A1687&client_id=1095369&role=seller"
 
 Request authorization code
-curl -v -L "http://localhost:8080/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME"
+curl -v -L "http://localhost:8080/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=iOS6sPlus-A1687"
+
+curl -v -L "https://dev-jaguar.com/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=iOS6sPlus-A1687"
 
 curl -v -L "https://ashishraghavan.me/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME"
 
-curl -v -X POST --cookie "jaguar_cookie=a17870b6-4d8e-4097-a473-a9aa04f19135" -F "username=ashish.raghavan@google.com" -F "password=12345" -F "device_uid=GOOGLECHROME" -F "auth_flow=true" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" "http://localhost:8080/api/authorize/login"
+Login
+curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "device_uid=iOS6sPlus-A1687" -F "auth_flow=false" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" "http://localhost:8080/client/api/login"
 
-curl -L -v -X POST -F "redirect_uri=http://localhost:8080" -F "authorization_code=3d15883b-5df6-4086-8bef-1701447eb4a5" -F "authorization=AGREE" -F "client_id=1095369" http://localhost:8080/api/oauth/token
+Login using a different device (should trigger a device creation on the server side)
+curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "device_uid=Nexus6p-XT1107" -F "auth_flow=false" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" -F "model=Nexus" -F "api=17" "http://localhost:8080/client/api/login"
+
+curl -L -v -X POST -F "redirect_uri=http://localhost:8080" -F "authorization_code=3d15883b-5df6-4086-8bef-1701447eb4a5" -F "authorization=AGREE" -F "client_id=1095369" http://localhost:8080/api/oauth/access_token
 
 {	
   "access_token" : "40d6b613-e77a-4911-858a-64cf2f02cb63",

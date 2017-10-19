@@ -22,7 +22,7 @@ import java.util.Map;
 @Test(groups="authorization")
 public class AuthorizationTest extends BaseTestCase {
 
-    @Test
+    @Test(enabled = false)
     @Rollback(value = false)
     public void testAccessToken() throws Exception {
         //COmplete the authorization process for ashish.raghavan@google.com first.

@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
  * Very simple group of tests demonstrating
  * CRUD operations for {@link com.jaguar.om.impl.Application}
  */
-@Test(groups={"application"})
+@Test(groups={"application"},dependsOnGroups = "account")
 public class ApplicationTest extends BaseTestCase {
 
     private Long applicationId;
@@ -28,6 +28,7 @@ public class ApplicationTest extends BaseTestCase {
         Assert.assertNotNull(account);
         accountId = account.getId();
         IApplication application = new Application(account,"AppSense","http://localhost:8080/api/client", ApplicationType.MOBILE_APP,"com.jaguar.jaguarxf");
+        application.setClientId(1095369);
         application.setVersionCode("1.0");
         application.setActive(true);
         application = getDao().save(application);

@@ -12,11 +12,13 @@ import javax.persistence.*;
 import java.util.Set;
 
 @Entity
-@Table(name = "jaguar_device",uniqueConstraints = {@UniqueConstraint(columnNames = {"device_uid","user_id"}),@UniqueConstraint(columnNames = {"account_id","device_uid"})})
+@Table(name = "jaguar_device",uniqueConstraints = {@UniqueConstraint(columnNames = {"device_uid","user_id"})})
 @AttributeOverride(name = "id",column = @Column(name = "device_id"))
 public class Device extends CommonObject implements IDevice {
 
-    public Device(){}
+    public Device(){
+        super();
+    }
 
     public Device(final IAccount account) {
         this();
@@ -35,8 +37,7 @@ public class Device extends CommonObject implements IDevice {
     }
 
     public Device(final String deviceUid,final IUser user) {
-        this.deviceUid = deviceUid;
-        this.user = user;
+        this(user.getAccount(),deviceUid,user);
     }
 
     public Device(final IAccount account, final String deviceUid, final IUser user, final String model,

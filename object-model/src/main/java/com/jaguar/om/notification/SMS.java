@@ -1,6 +1,8 @@
 package com.jaguar.om.notification;
 
-public class SMS {
+import com.jaguar.om.Message;
+
+public class SMS extends Message {
     private String toPhone;
     private String fromPhone;
     private String messageBody;

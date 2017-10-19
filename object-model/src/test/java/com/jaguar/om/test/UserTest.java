@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
  * Very simple group of tests demonstrating
  * CRUD operations on {@link com.jaguar.om.impl.User}
  */
-@Test
+@Test(groups = "user",dependsOnGroups = {"application"})
 public class UserTest extends BaseTestCase {
 
 

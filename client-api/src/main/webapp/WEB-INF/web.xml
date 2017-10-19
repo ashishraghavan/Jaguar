@@ -34,8 +34,27 @@
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
+    <servlet>
+        <servlet-name>fileservlet</servlet-name>
+        <servlet-class>
+            com.jaguar.servlet.FileServlet
+        </servlet-class>
+        <init-param>
+            <param-name>debug</param-name>
+            <param-value>0</param-value>
+        </init-param>
+        <init-param>
+            <param-name>listings</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
     <servlet-mapping>
         <servlet-name>rest</servlet-name>
-        <url-pattern>/api/*</url-pattern>
+        <url-pattern>/client/api/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>fileservlet</servlet-name>
+        <url-pattern>/client/api/files/*</url-pattern>
     </servlet-mapping>
 </web-app>
