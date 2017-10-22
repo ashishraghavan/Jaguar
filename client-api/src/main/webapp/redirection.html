@@ -17,7 +17,7 @@
 
     var tokenRequest = new XMLHttpRequest();
     var tokenURL = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
-        "/" + "api/oauth/token";
+        "/" + "client/api/oauth/token";
     var formData = new FormData();
     formData.set('authorization_code',authorizationCode);
     formData.set('client_id',clientId);

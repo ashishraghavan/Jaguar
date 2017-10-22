@@ -253,7 +253,7 @@ public class AuthenticationService extends CommonService {
                         + "&" + AUTHORIZATION_CODE + "=" +authorizationCode
                         + "&" + DEVICE_UID + "=" + deviceUid
                         + "&" + SCOPES + "=" +scopes;
-                final URI consentURI = URI.create(scheme + "://" + absolutePath.getAuthority() + "/" + "consent.html" + authQueryParams);
+                final URI consentURI = URI.create(scheme + "://" + absolutePath.getAuthority() + context + files + "/" + "consent.html" + authQueryParams);
                 return Response.seeOther(consentURI).location(consentURI).build();
             }
 

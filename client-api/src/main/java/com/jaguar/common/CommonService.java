@@ -24,7 +24,7 @@ public class CommonService extends CommonConstants {
     private final String classNameHashCodeTemplate = "Classname/hashcode : %s / %d";
     protected static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false)
             .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,false);
-    private static final String[] USER_IGNORE_PROPERTIES = new String[]{"active"};
+    protected static final String[] USER_IGNORE_PROPERTIES = new String[]{"active"};
     @SuppressWarnings("unused")
     protected static final String[] DEVICE_IGNORE_PROPERTIES = USER_IGNORE_PROPERTIES;
     @SuppressWarnings("unused")
@@ -73,7 +73,7 @@ public class CommonService extends CommonConstants {
 
     protected String getAuthTokenFromHeaders(final String authValue) {
         if(Strings.isNullOrEmpty(authValue)) {
-            serviceLogger.error("Auth token was null for this request");
+             serviceLogger.error("Auth token was null for this request");
             return null;
         }
         //Bearer 3456.....

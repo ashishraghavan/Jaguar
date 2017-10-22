@@ -197,7 +197,8 @@ public class OAuth2Service extends CommonService {
                 return Response.ok(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(accountList)).build();
             } catch (Exception e) {
                 serviceLogger.error("There was an error querying accounts for this user with exception "+e.getLocalizedMessage());
-                return Response.serverError().build();
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
             }
         }
 
@@ -255,6 +256,7 @@ public class OAuth2Service extends CommonService {
                                         final @FormDataParam("authorization_code") String authorizationCode,
                                         final @FormDataParam("client_id") String clientIdStr,
                                         final @FormDataParam("scopes") String scopes) {
+        IUserApplication userApplication;
         if(Strings.isNullOrEmpty(authorization)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
@@ -317,7 +319,7 @@ public class OAuth2Service extends CommonService {
             //No need for separate blocks for agree & disagree.
             final IUserApplication.Authorization decision = IUserApplication.Authorization.valueOf(authorization);
             //Create an entry in the user application table.
-            IUserApplication userApplication = new UserApplication(user,application);
+            userApplication = new UserApplication(user,application);
             final IUserApplication loadedUserApplication = getDao().loadSingleFiltered(userApplication,null,false);
             if(loadedUserApplication != null) {
                 //update operation.
@@ -337,7 +339,8 @@ public class OAuth2Service extends CommonService {
             return Response.seeOther(uri).location(uri).build();
         } catch (Exception e) {
             serviceLogger.error("There was an error processing this request with message "+e.getLocalizedMessage());
-            return Response.serverError().build();
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.
+                    builder().withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
         }
     }
 
@@ -422,7 +425,7 @@ public class OAuth2Service extends CommonService {
             return Response.ok().entity(resultMap).build();
         } catch (Exception e) {
             serviceLogger.error("There was an error processing this request with message "+e.getLocalizedMessage());
-            return Response.serverError().build();
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
         }
     }
 }

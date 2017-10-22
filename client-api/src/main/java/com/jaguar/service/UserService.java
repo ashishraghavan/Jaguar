@@ -137,15 +137,21 @@ public class UserService extends CommonService {
             //Check if this user exists.
             //A user is always scoped to an account.
             IUser user = new User(application.getAccount(),username);
-            //Make sure that this user is active.
-            user.setActive(true);
-            IUser userFromDB = getDao().loadSingleFiltered(user,null,false);
+            //If the user has registered but not verified
+            IUser userFromDB = getDao().loadSingleFiltered(user,USER_IGNORE_PROPERTIES,false);
             //If this user already exists in the database, we don't register.
             if(userFromDB != null) {
-                serviceLogger.info("User with email "+username+" already present for account "+application.getAccount().getAccountName()
-                        +", maybe this user is trying to add a device to this username?");
-                return Response.ok().entity(ErrorMessage.builder().withErrorCode(ErrorMessage.FREE_FORM).withMessage("User with email "+username+" already present for account "+application.getAccount().getAccountName()
-                        +", maybe this user is trying to add a device to this username?").build()).build();
+                //If the user is active.
+                if(userFromDB.isActive()) {
+                    serviceLogger.info("User with email "+username+" already present for account "+application.getAccount().getAccountName()
+                            +", maybe this user is trying to add a device to this username?");
+                    return Response.ok().entity(ErrorMessage.builder().withErrorCode(ErrorMessage.FREE_FORM).withMessage("User with email "+username+" already present for account "+application.getAccount().getAccountName()
+                            +", maybe this user is trying to add a device to this username?").build()).build();
+                }
+                //Otherwise, we send out a message saying user has to click the verification link sent
+                //in the email.
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The user "+username+" has registered, but not verified").build()).build();
             }
             serviceLogger.info("Starting to create user");
             if(!Strings.isNullOrEmpty(firstName)) {
@@ -269,6 +275,13 @@ public class UserService extends CommonService {
         }
         try {
             //Save the user first.
+            verifiedUser.setActive(false);
+            verifiedUser = getDao().loadSingleFiltered(verifiedUser,null,false);
+            if(verifiedUser == null) {
+                serviceLogger.error("The user with email "+email+" was not found on this system");
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
+            }
             verifiedUser.setActive(true);
             verifiedUser = getDao().save(verifiedUser);
             //Check if the device user from the DeviceUser table is present.

@@ -4,14 +4,11 @@ package com.jaguar.om.impl;
 import com.jaguar.om.IAccount;
 import com.jaguar.om.IAddress;
 import com.jaguar.om.IUser;
-
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.hibernate.annotations.ForeignKey;
 import org.testng.util.Strings;
 
 import javax.persistence.*;
-import java.util.UUID;
 
 @Entity
 @Table(name = "jaguar_address",uniqueConstraints = @UniqueConstraint(columnNames = {"account_id","address_hash"}))

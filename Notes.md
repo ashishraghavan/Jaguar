@@ -24,7 +24,7 @@ jaguar_cookie=619fb794-1f04-440c-9bbf-547a6918a4cb;Version=1;Comment="cookie for
 Register a user and device.
 curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "role=seller" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=iOS6sPlus-A1687" -F "model=iPhone6sPlus" -F "client_id=1095369" -F "api=15" -F "role=seller" "http://localhost:8080/client/api/user"
 
-Register another user with same device
+Register same user with different device
 curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "role=seller" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=Nexus6-XT2048" -F "model=Nexus 6" -F "client_id=1095369" -F "api=17" "http://localhost:8080/client/api/user"
 
 Resend verification link
@@ -39,6 +39,8 @@ curl -v -L "https://ashishraghavan.me/client/api/oauth/authorize?response_type=j
 
 Login
 curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "device_uid=iOS6sPlus-A1687" -F "auth_flow=false" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" "http://localhost:8080/client/api/login"
+
+curl -v -k -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "device_uid=iOS6sPlus-A1687" -F "auth_flow=false" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" "https://dev-jaguar.com/client/api/login"
 
 Login using a different device (should trigger a device creation on the server side)
 curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "device_uid=Nexus6p-XT1107" -F "auth_flow=false" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" -F "model=Nexus" -F "api=17" "http://localhost:8080/client/api/login"
@@ -90,4 +92,3 @@ API for registering a user.
                                  final @FormDataParam("api_version") String api,
                                  final @FormDataParam("notification_service_id") String notificationServiceId,
 curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=jaguar12345" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=TXA1673" -F "model=Nexus 6" -F "client_id="
-

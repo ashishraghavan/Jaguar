@@ -73,7 +73,7 @@ img.avatar {
         }
         var consentHttpRequest = new XMLHttpRequest();
         var consentUrl = location.protocol + "//" + location.hostname + (location.port ? ':' + location.port : '') +
-            "/" + "api/oauth/update?";
+            "/" + "client/api/oauth/update?";
         var formData = new FormData();
         formData.set('redirect_uri',getUrlParameter('redirect_uri'));
         formData.set('authorization_code',getUrlParameter('authorization_code'));
