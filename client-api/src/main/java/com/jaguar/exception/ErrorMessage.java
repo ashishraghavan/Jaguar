@@ -1,12 +1,15 @@
 package com.jaguar.exception;
 
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.jaguar.common.CommonService;
 import jersey.repackaged.com.google.common.collect.ImmutableMap;
 import org.apache.log4j.Logger;
 import org.springframework.util.StringUtils;
 import org.testng.util.Strings;
 
+import java.io.StringWriter;
 import java.util.Map;
 
 public class ErrorMessage extends CommonService {
@@ -16,6 +19,17 @@ public class ErrorMessage extends CommonService {
     private static final Logger logger = Logger.getLogger(ErrorMessage.class.getSimpleName());
     private static final String serverErrorJSON = "{\"errorCode\":\"500\"," +
             "\"errorMessage\":\"The server encountered an error while processing this request\"}";
+    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final StringWriter stringWriter = new StringWriter();
+    static JsonGenerator jsonGenerator;
+
+    static {
+        try {
+            jsonGenerator = jsonFactory.createGenerator(stringWriter);
+        } catch (Exception e) {
+            logger.error("There was an error creating the JSON generator");
+        }
+    }
 
     /* Error code declaration */
     public static final int ARGUMENT_REQUIRED = 1;
@@ -86,6 +100,9 @@ public class ErrorMessage extends CommonService {
         }
 
         public String build() {
+            if(jsonGenerator == null) {
+                throw new IllegalStateException("Can't build an instance of "+ErrorMessage.class.getSimpleName()+" without having a JSON generator");
+            }
             //The number of %s should be equal to the message length.
             final int countOfStrFormat = StringUtils.countOccurrencesOf(errorCodeMap.get(errorCode),"%s");
             if(this.message != null && countOfStrFormat != this.message.length) {
@@ -93,8 +110,14 @@ public class ErrorMessage extends CommonService {
             }
             try {
                 if(countOfStrFormat > 0) {
+                    final Object[] objectArgs = new Object[countOfStrFormat];
+                    if(this.message != null) {
+                        for(int i =0;i<this.message.length;i++) {
+                            objectArgs[i++] = this.message[i];
+                        }
+                    }
                     //We only need to format the string if there are any string identifiers (%s)
-                    this.substitutedMessage = String.format(errorCodeMap.get(errorCode),this.message);
+                    this.substitutedMessage = String.format(errorCodeMap.get(errorCode),objectArgs);
                 } else {
                     //Other wise, we directly use the original message in the map.
                     this.substitutedMessage = errorCodeMap.get(errorCode);
@@ -107,11 +130,29 @@ public class ErrorMessage extends CommonService {
 
             //We can write a different method which does not convert to JSON always.
             try {
-                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ErrorMessage(this.errorCode,this.substitutedMessage));
+                if(jsonGenerator.isClosed()) {
+                    jsonGenerator = jsonFactory.createGenerator(stringWriter);
+                }
+                jsonGenerator.writeStartObject();
+                jsonGenerator.writeFieldName("code");
+                jsonGenerator.writeNumber(this.errorCode);
+                jsonGenerator.writeFieldName("message");
+                jsonGenerator.writeString(this.substitutedMessage);
+                jsonGenerator.writeEndObject();
+                jsonGenerator.flush();
+                stringWriter.flush();
+                stringWriter.close();
+                return stringWriter.toString();
             } catch (Exception e) {
                 logger.error("There was an error serializing the ErrorMessage object with message "+this.substitutedMessage+" and errorCode "+this.errorCode+" with exception "+e.getLocalizedMessage());
                 logger.info("Sending an internal server error response.");
                 return serverErrorJSON;
+            } finally {
+                if(jsonGenerator != null) {
+                    try {
+                        jsonGenerator.close();
+                    } catch (Exception ignore){}
+                }
             }
         }
 
