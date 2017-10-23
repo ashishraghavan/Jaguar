@@ -27,7 +27,7 @@ public class ApplicationTest extends BaseTestCase {
         account = getDao().loadSingleFiltered(account,COMMON_EXCLUDE_PROPERTIES,false);
         Assert.assertNotNull(account);
         accountId = account.getId();
-        IApplication application = new Application(account,"AppSense","http://localhost:8080/api/client", ApplicationType.MOBILE_APP,"com.jaguar.jaguarxf");
+        IApplication application = new Application(account,"AppSense","http://localhost:8080/client/api/files/redirection.html", ApplicationType.MOBILE_APP,"com.jaguar.jaguarxf");
         application.setClientId(1095369);
         application.setVersionCode("1.0");
         application.setActive(true);

@@ -31,7 +31,7 @@ Resend verification link
 curl -v "http://localhost:8080/client/api/user/resendlink?email=ashishraghavan13687@gmail.com&device_uid=iOS6sPlus-A1687&client_id=1095369&role=seller"
 
 Request authorization code
-curl -v -L "http://localhost:8080/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=iOS6sPlus-A1687"
+curl -v -L "http://localhost:8080/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080/client/api/files/redirection.html&scope=seller&device_uid=iOS6sPlus-A1687"
 
 curl -v -L "https://dev-jaguar.com/client/api/oauth/authorize?response_type=json&client_id=1095369&redirect_uri=http://localhost:8080&scope=seller&device_uid=iOS6sPlus-A1687"
 
@@ -45,7 +45,9 @@ curl -v -k -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=1234
 Login using a different device (should trigger a device creation on the server side)
 curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" -F "device_uid=Nexus6p-XT1107" -F "auth_flow=false" -F "redirect_uri=http://localhost:8080/api/client" -F "client_id=1095369" -F "model=Nexus" -F "api=17" "http://localhost:8080/client/api/login"
 
-curl -L -v -X POST -F "redirect_uri=http://localhost:8080" -F "authorization_code=3d15883b-5df6-4086-8bef-1701447eb4a5" -F "authorization=AGREE" -F "client_id=1095369" http://localhost:8080/api/oauth/access_token
+
+Get the auth token
+curl -L -v -X POST -F "authorization_code=596c1397-0cb4-453b-8140-453a17f136b4" -F "authorization=AGREE" -F "client_id=1095369" http://localhost:8080/api/oauth/access_token
 
 {	
   "access_token" : "40d6b613-e77a-4911-858a-64cf2f02cb63",

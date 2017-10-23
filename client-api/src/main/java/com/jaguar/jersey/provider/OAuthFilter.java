@@ -45,7 +45,8 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
                 //Check against the CacheManager.
                 final IUser authorizedUser = getCacheManager().getTokenCache().getIfPresent(authToken);
                 if(authorizedUser == null) {
-                    requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).build());
+                    requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build());
                 }
                 //Create the security context
                 requestContext.setSecurityContext(new JaguarSecurityContext(authorizedUser,requestContext.getUriInfo()));
