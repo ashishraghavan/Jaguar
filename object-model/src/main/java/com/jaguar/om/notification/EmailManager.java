@@ -125,10 +125,14 @@ public class EmailManager extends CommonObject implements IEmailManager {
     public static void main(String[] args) throws Exception {
         final IEmailManager emailManager = new EmailManager();
         final Email email = EmailManager.builder()
-                .body("This is just a test email from ashishraghavan.me domain using mailgun!")
-                .to("ashish13687@icloud.com")
-                .subject("Test Email")
+                .body("Please verify yourself by clicking on the following link.\n" +
+                        "\n" +
+                        "http://localhost:8080/client/api/user/verify?email=ashishraghavan13687@gmail.com&code=b3916062-1aa6-4e8a-8ceb-4f776b03b0e3&device_uid=iOS6sPlus-A1687&role=seller")
+                .to("jaguardevelopmental@gmail.com")
+                .subject("Verify your registration")
                 .build();
-        emailManager.sendEmail(email);
+        for(int i = 0;i<3;i++) {
+            emailManager.sendEmail(email);
+        }
     }
 }

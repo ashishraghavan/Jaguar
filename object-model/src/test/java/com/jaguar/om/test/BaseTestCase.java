@@ -39,7 +39,7 @@ public abstract class BaseTestCase extends AbstractTransactionalTestNGSpringCont
         this.dao = dao;
     }
 
-    IBaseDAO getDao() {
+    protected IBaseDAO getDao() {
         return this.dao;
     }
     private static final TypeFactory typeFactory = TypeFactory.defaultInstance();

@@ -2,6 +2,7 @@ package com.jaguar.service;
 
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
+import com.jaguar.jersey.provider.JaguarSecurityContext;
 import com.jaguar.om.*;
 import com.jaguar.om.enums.ApplicationType;
 import com.jaguar.om.impl.*;
@@ -22,6 +23,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/user")
@@ -234,14 +236,16 @@ public class UserService extends CommonService {
         }
     }
 
+    @GET
     @Path("/verify")
-    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_HTML})
+    @Produces({MediaType.APPLICATION_JSON})
     @Transactional
     @PermitAll
     public Response verifyUserRegistration(final @QueryParam("email") String email,
                                            final @QueryParam("code") String code,
                                            final @QueryParam("device_uid") String deviceUId,
-                                           final @QueryParam("role") String roleName) {
+                                           final @QueryParam("role") String roleName,
+                                           final @Context ContainerRequestContext requestContext) {
         //Sanity checks. Any missing query parameter will result in an internal server error.
         if(Strings.isNullOrEmpty(email)) {
             serviceLogger.error("The parameter email was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error.");
@@ -271,7 +275,8 @@ public class UserService extends CommonService {
         IUser verifiedUser = getCacheManager().getUserVerificationCache().getIfPresent(code);
         if(verifiedUser == null) {
             serviceLogger.error("The authorization code has expired.");
-            return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.LINK_EXPIRED).build()).build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.LINK_EXPIRED).build()).build();
         }
         try {
             //Save the user first.
@@ -292,7 +297,7 @@ public class UserService extends CommonService {
             if(device == null) {
                 serviceLogger.error("The device id from the query parameter is not correct. This should not have happened!");
                 return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
-                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).withMessage(INTERNAL_SERVER_ERROR_MSG).build()).build();
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
             }
             //save the device after setting it to active.
             device.setActive(true);
@@ -313,6 +318,7 @@ public class UserService extends CommonService {
      * curl -v "http://localhost:8080/api/user/resendlink?email=ashishraghavan13687@gmail.com&device_uid=iOS6sPlus-A1687&client_id=1095369"
      */
     //TODO : Write logic to prevent more than 3 requests with 15 minutes.
+    @GET
     @Path("/resendlink")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_HTML})
     @Transactional
@@ -380,8 +386,7 @@ public class UserService extends CommonService {
             emailManager.sendEmail(email);
             //Only after we have sent the email, we add the code to the in memory cache.
             getCacheManager().getUserVerificationCache().put(verificationCode,user);
-            final String jsonResponse = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user);
-            return Response.ok().entity(jsonResponse).build();
+            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(user)).build();
         } catch (Exception e) {
             serviceLogger.error("There was an error querying for the device, user or the device user with exception "+e.getLocalizedMessage());
             return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -422,8 +427,40 @@ public class UserService extends CommonService {
     @Path("/{userId}/device/{deviceUid}/revoke")
     @Transactional
     @Produces(MediaType.APPLICATION_JSON)
-    public Response revokeUserDevice(@PathParam("deviceUid") final String deviceUid,@PathParam("userId") final String userId,
-                                     @Context ContainerRequestContext requestContext) {
+    public Response revokeUserDevice(@PathParam("deviceUid") final String deviceUid,
+                                     @PathParam("userId") final String userId,
+                                     @Context ContainerRequestContext requestContext,
+                                     @Context JaguarSecurityContext securityContext) {
+        IUser authenticatedUser = (IUser)securityContext.getUserPrincipal();
+        if(authenticatedUser == null) {
+            serviceLogger.error("There was an error obtaining the authenticated user from the Security Context");
+            return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build();
+        }
+        final Set<IDevice> userDevices = authenticatedUser.getDevices();
+        if(userDevices == null || userDevices.isEmpty()) {
+            serviceLogger.error("The user "+authenticatedUser.getEmail()+" does not have any devices associated");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The user "+authenticatedUser.getEmail()+" does not have any devices associated").build()).build();
+        }
+        IDevice userDevice = null;
+        for(IDevice device : userDevices) {
+            if(device.getDeviceUId().equals(deviceUid)) {
+                userDevice = device;
+            }
+        }
+        if(userDevice == null) {
+            serviceLogger.error("There is no device with id "+deviceUid+" for the user "+userId);
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage("There is no device with id "+deviceUid+" for the user "+userId).build()).build();
+        }
+        try {
+            getDao().remove(userDevice);
+        } catch (Exception e) {
+            serviceLogger.error("There was an error removing the device with id "+deviceUid+" associated to the user "+userId);
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
+        }
         return Response.ok().build();
     }
 }

@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "jaguaremailreceiver",
+  "private_key_id": "6dd27a732541e9c4ec343b96a1dfa36055d84812",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWVFDGolBeaJsU\n8NaJCI0EbEAdt0PtDhxAn+c8R2vyMkesrSrpxTuZrGWz7KpNch8f82lTpdsvSsTN\nYQE8Us+ybSXb7un3kgLcznFw2WlqD89nqeyel3pOtav3jAn3iMeyfjrIEYJ3/tJk\naKXcpGZy7H6I0Zc+6Tap6c75089/n7XlFyM4FMaUTm9K33HZF6ct5K8kCGYXhGt6\nngPDeOOvP85iGY9WTsXlys+H2X+l+Ghm1EEkObdRBvTJYoL/gtGWWWBMp8lneJlX\ndWZOYLbf6BMWURzUOr9X7TIaZoJwkwf9iqdZXHOmalljNDbVY+eIjIuT4fKPq9Nl\n+hnfJ4H3AgMBAAECggEADtI9076duCmbr9MHwuoodknWFTf7JoV3RrDIGM8Hk/QO\nKM7AzPGqsXHOhqazEC/4HwmCGxq5EYgmG929bCJ94mTR3WekHk6mjAZqqdcfBwqY\n2R5TEpR/DLpbbf7tIYT/6kP4ZKVxVEL24aKq9ZsYypG4HlYAE4WlFhLpETWof7a3\nKtlsGR4ENWnqyofR/NDkuqWZV9gAdr9nPGmk1A+Mo+YaTC1RoegGRNK+A+QfoxlI\nQ+Wgn9ilNGewKWQzhcHG987gzhvMTlZWlNUzP36EIeThl2iDxggQFXRTeIlGAR6a\nAyi2cnA29zDecCV8ZFJ/xn9zrKf1d+PoVN8sgo6rQQKBgQD9JHfDtQ48wno+9bn6\nT2LVeaVOFUx4fzr0YGTaAmXXSVwzk/OxNocGoe0rSVaSeshGPfd70haYVGKbSSKw\nU1k2AobhZPU7waLXA8GyKzUZOlOLQ0G0/VfePv3rNz1BZ2X49vRB3I5cv8cK74yn\ngMch4Lba9ensEit/Y48LP6lhOQKBgQDYv695lBQFOEofXHSFDxRO59u8fD5IfzbT\nTMk/ky96d1uvdro2vWYgmeUp22zPYyvgV4bhezAqrUiVFymg2mibQw3it/z64ury\nRmIhru7bTsIzh3lr/RSxydRWNAI/UavdcYiF2J2oODb8JiiL1tJRAnvdkyTegX2a\nr/mNgipsrwKBgQDcES4E94vPCorX3Su3Dfiv+TbaMO3v+zu3Y22JkXgTtvTu6fp6\n3xp3i6HxdapLYW5mkkxqWnPGLeYjdWswuuTdbUjw/aGsN2RnZB6p06IvsmMauHeQ\n7oXK8hwwti8MguVFkPs7npAs1ZQmT6aJoAx9yStuI0cfMZSbBGRAtTF9EQKBgEeP\nOZrVJar3g5lJB/sqGFVYvTZEereqsGogjszbhjBTmcSbWS1baI1Y4czo8cqifkjp\n/NESv7tHTJBUflzp3uFryPjSL8aRBmqIjDt8qsVjAkDK+G6Ltrpf3Se8sgU/rJNG\nuYEfHCX+sUCcRISunu8597UWsHR5ogNhF+39TI5nAoGAKf1FNLCw+Ty5Q4fGBfk+\nD5Qqk8f2xBhrXHknYdisUREHICvmkrgw9uuI/PqDQNE0KrdvNj9B8NRI1pi/A1gV\nzSBO4S9f5PJgQWukytyK2g8VAt7UBSs8apEbHne1UkbtnXw8b02aONMMYWn7jIAo\nw+UWf5//65iwAYpDHTzhXDQ=\n-----END PRIVATE KEY-----\n",
+  "client_email": "jaguaremailreceiver@jaguaremailreceiver.iam.gserviceaccount.com",
+  "client_id": "101281312389788580912",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/jaguaremailreceiver%40jaguaremailreceiver.iam.gserviceaccount.com"
+}

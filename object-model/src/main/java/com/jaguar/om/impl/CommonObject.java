@@ -1,6 +1,7 @@
 package com.jaguar.om.impl;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.ICommonObject;
 
 import javax.persistence.*;
@@ -9,19 +10,23 @@ import java.util.Date;
 @MappedSuperclass
 public abstract class CommonObject implements ICommonObject {
 
+    @JsonIgnore
     @Column(name = "created",nullable=false,insertable = false,updatable = false,
             columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     @Temporal(TemporalType.TIMESTAMP)
     private Date creationDate;
 
+    @JsonIgnore
     @Column(name = "modified",nullable = true,insertable = true,updatable = true,
             columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     @Temporal(TemporalType.TIMESTAMP)
     private Date modificationDate;
 
+    @JsonIgnore
     @Column(name = "active",nullable = false,insertable = true,updatable = true,columnDefinition = "boolean default true")
     private boolean active;
 
+    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

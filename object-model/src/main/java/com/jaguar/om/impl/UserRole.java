@@ -25,7 +25,7 @@ public class UserRole extends CommonObject implements IUserRole {
     }
 
     @Override
-    public void setRRole(IRole role) {
+    public void setRole(IRole role) {
         this.role = role;
     }
 

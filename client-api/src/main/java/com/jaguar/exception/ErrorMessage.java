@@ -112,9 +112,7 @@ public class ErrorMessage extends CommonService {
                 if(countOfStrFormat > 0) {
                     final Object[] objectArgs = new Object[countOfStrFormat];
                     if(this.message != null) {
-                        for(int i =0;i<this.message.length;i++) {
-                            objectArgs[i++] = this.message[i];
-                        }
+                        System.arraycopy(this.message, 0, objectArgs, 0, this.message.length);
                     }
                     //We only need to format the string if there are any string identifiers (%s)
                     this.substitutedMessage = String.format(errorCodeMap.get(errorCode),objectArgs);
@@ -131,6 +129,8 @@ public class ErrorMessage extends CommonService {
             //We can write a different method which does not convert to JSON always.
             try {
                 if(jsonGenerator.isClosed()) {
+                    //clear the stringwriter buffer.
+                    stringWriter.getBuffer().setLength(0);
                     jsonGenerator = jsonFactory.createGenerator(stringWriter);
                 }
                 jsonGenerator.writeStartObject();

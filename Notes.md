@@ -2,6 +2,8 @@ If there was no bi-directional relationship between User and Device, deleting a 
 
 When not using the jersey-spring3 integration dependency, the setter method with @Autowired annotation is not called when a service call is made (annotated with @Component). On adding the jersey-spring3 dependency and excluding a bunch of dependencies causing error, the setter method for dao is called twice in the service class (ApplicationService.java). The first one when the server container is initiliazed, which is normal as the setter injection is used by spring. However, on calling any API (service call), this is one of the major difference : The ApplicationService as initialized by Spring and later on by jersey have different hashcodes. I don't know why would this happen. And if the class has already been loaded once, why would there be a need for Jersey and Spring to load these classes separately? I can understand if the classloader being used for this is different.
 
+Make sure to annotate all methods with the appropriate HTTP methods. (@GET,@POST,@PUT) etc. When accessing the link through the browser (from an email maybe), it doesn't correctly return the response.
+
 For running the build.
 To skip tests : -Dmaven.test.skip=true=true
 mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15"  clean install
@@ -47,7 +49,7 @@ curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=12345" 
 
 
 Get the auth token
-curl -L -v -X POST -F "authorization_code=596c1397-0cb4-453b-8140-453a17f136b4" -F "authorization=AGREE" -F "client_id=1095369" http://localhost:8080/api/oauth/access_token
+curl -L -v -X POST -F "authorization_code=596c1397-0cb4-453b-8140-453a17f136b4" -F "client_id=1095369" http://localhost:8080/client/api/oauth/token
 
 {	
   "access_token" : "40d6b613-e77a-4911-858a-64cf2f02cb63",
@@ -78,19 +80,13 @@ curl -L -v -X POST -F "authorization_code=596c1397-0cb4-453b-8140-453a17f136b4" 
   }
 }
 
+//Get the User details.
+curl -v -k -H "Authorization:Bearer 544a70e8-4a0f-4b3c-9304-0187a96bcbed" "http://localhost:8080/client/api/user/ashishraghavan13687@gmail.com"
+
 For sending emails, we are using MailGun, with the username as 'api' and password as 'key-910ae7b7d0722488c0951dfce679fe76'. This is the basic authentication scheme. The domain name used is 'postmaster@ashishraghavan.me', which is the sandbox domain for my free account.
 
 API key for MailGun = key-910ae7b7d0722488c0951dfce679fe76
 
-API for registering a user.
-    public Response registerUser(final @FormDataParam("username") String username,
-                                 final @FormDataParam("password") String password,
-                                 final @FormDataParam("first_name") String firstName,
-                                 final @FormDataParam("last_name") String lastName,
-                                 final @FormDataParam("phone") String phone,
-                                 final @FormDataParam("device_uid") String deviceUid,
-                                 final @FormDataParam("model") String model,
-                                 final @FormDataParam("client_id") String clientIdStr,
-                                 final @FormDataParam("api_version") String api,
-                                 final @FormDataParam("notification_service_id") String notificationServiceId,
-curl -v -X POST -F "username=ashishraghavan13687@gmail.com" -F "password=jaguar12345" -F "first_name=Ashish" -F "last_name=Raghavan" -F "phone=4082216275" -F "device_uid=TXA1673" -F "model=Nexus 6" -F "client_id="
+The email for Jaguar Development is : jaguardevelopmental@gmail.com
+scopes : https://mail.google.com/
+The "Allow less secure apps" setting has been turned on for the javax.mail client to work correctly.
