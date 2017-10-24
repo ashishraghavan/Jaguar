@@ -11,7 +11,9 @@ import javax.persistence.*;
 @AttributeOverride(name = "id",column = @Column(name = "user_role_id"))
 public class UserRole extends CommonObject implements IUserRole {
 
-    public UserRole(){}
+    public UserRole(){
+        super();
+    }
 
     public UserRole(final IUser user,final IRole role) {
         this();
@@ -38,4 +40,14 @@ public class UserRole extends CommonObject implements IUserRole {
     @JoinColumn(name = "role_id",nullable = false)
     @org.hibernate.annotations.ForeignKey(name = "fk_user_role_role_id")
     private IRole role;
+
+    @Override
+    public IRole getRole() {
+        return this.role;
+    }
+
+    @Override
+    public IUser getUser() {
+        return this.user;
+    }
 }

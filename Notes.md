@@ -4,6 +4,8 @@ When not using the jersey-spring3 integration dependency, the setter method with
 
 Make sure to annotate all methods with the appropriate HTTP methods. (@GET,@POST,@PUT) etc. When accessing the link through the browser (from an email maybe), it doesn't correctly return the response.
 
+When you use Cascade=CaseType.ALL, if a device is deleted, all its associated relationships will also be deleted. This may or may not be an advantage.
+
 For running the build.
 To skip tests : -Dmaven.test.skip=true=true
 mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15"  clean install
