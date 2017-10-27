@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testng.util.Strings;
 
 import javax.ws.rs.container.ContainerRequestContext;
+import java.net.URI;
 
 @Component
 public class CommonService extends CommonConstants {
@@ -133,5 +134,22 @@ public class CommonService extends CommonConstants {
             scheme = xForwardedProto;
         }
         return scheme;
+    }
+
+    /**
+     * Get the port if obtained from the absolute URI.
+     * @param requestContext The request context being used.
+     * @return The port number in String format or empty if port is not defined.
+     */
+    @SuppressWarnings("unused")
+    protected String getPort(final ContainerRequestContext requestContext) {
+        if(requestContext == null) {
+            throw new IllegalStateException("Request context expected to be non-null for this method");
+        }
+        final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
+        if(absolutePath.getPort() > 0) {
+            return String.valueOf(absolutePath.getPort());
+        }
+        return "";
     }
 }

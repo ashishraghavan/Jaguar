@@ -6,6 +6,61 @@ Make sure to annotate all methods with the appropriate HTTP methods. (@GET,@POST
 
 When you use Cascade=CaseType.ALL, if a device is deleted, all its associated relationships will also be deleted. This may or may not be an advantage.
 
+#################################################################################
+For rabbitmq, available commands can be found under /usr/local/Cellar/rabbit
+
+
+docker run -d -p 1401:1401 -p 2775:2775 -p 8990:8990 --name jasmin_01 jookies/jasmin:latest
+docker run -d -p 1411:1401 -p 2785:2775 -p 9000:8990 --name jasmin_02 jookies/jasmin:latest
+docker run -d -p 1421:1401 -p 2795:2775 -p 9010:8990 --name jasmin_03 jookies/jasmin:latest
+docker run -d -p 1431:1401 -p 2805:2775 -p 9020:8990 --name jasmin_04 jookies/jasmin:latest
+
+docker run -d -v ~/jasmin_logs:/var/log/jasmin --name jasmin_100 jookies/jasmin:latest
+
+Adding a new connector
+smppccm -a
+
+Host  Host of remote SMS-C  172.16.10.67
+Port  SMPP port on remote SMS-C 2775
+Username  Authentication username smppclient1
+Password  Authentication password password
+Throughput  Maximum sent SMS/second 110
+
+Twilio Phone number = (408) 763-8449
+Twilio Account Password = H9Uw3Ctzy9D1iQt
+
+PLivo username/password
+ashishraghavan13687@gmail.com/H9Uw3Ctzy9D1iQt
+
+TEST ACCOUNT SID
+AC37e50df423ed5f422f24c5b71d3a7819
+
+TEST AUTHTOKEN
+b5f485867cdc3fe5770f9a1c2460fb4b
+
+Production ACCOUNT SID
+ACb99b9a5e0a29d2d869a522225b122783
+
+Production AUTHTOKEN
+23a7e397c442426e8501dbeb972afab6
+
+curl 'https://api.twilio.com/2010-04-01/Accounts/ACb99b9a5e0a29d2d869a522225b122783/Messages.json' -X POST \
+--data-urlencode 'To=+14082216275' \
+--data-urlencode 'From=+14087638449' \
+-u ACb99b9a5e0a29d2d869a522225b122783:23a7e397c442426e8501dbeb972afab6
+
+Twilio doesnt seem to work/is expensive (probably)
+
+PLivo Details
+AUTH ID = MAMWQWMGU1ZDY5YJZJMM
+AUTH TOKEN = M2E3N2IwY2YxNzBhNGQ5NmUzYTJjMTVlNjBhNzAw
+source number = +1 917-993-5471
+
+Response after sending an SMS.
+MessageResponse [serverCode=202, message=message(s) queued, messageUuids=[4b08bffa-b9d1-11e7-b886-067c5485c240], error=null, apiId=4a74e2a8-b9d1-11e7-b886-067c5485c240]
+
+################################################################################
+
 For running the build.
 To skip tests : -Dmaven.test.skip=true=true
 mvn -U -X -DargLine="-DDB_SERVER=localhost -DDB_PORT=5432 -DDB_USER=jaguar -DDB_PASSWORD=jaguar -DDB_NAME=jaguar -DDB_MAX_POOL_SIZE=15"  clean install

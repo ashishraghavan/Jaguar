@@ -82,6 +82,11 @@ public class Application extends CommonObject implements IApplication{
         this.name = name;
     }
 
+    public Application(final IAccount account,Integer clientId) {
+        this(clientId);
+        this.account = account;
+    }
+
     public String getName() {
         return this.name;
     }

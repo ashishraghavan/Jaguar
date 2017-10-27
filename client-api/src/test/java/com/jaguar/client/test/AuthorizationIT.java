@@ -20,7 +20,7 @@ import java.util.Map;
  * &redirect_uri=http://localhost:8080&scope=seller&device_uid=GOOGLECHROME
  */
 @Test(groups="authorization")
-public class AuthorizationTest extends BaseTestCase {
+public class AuthorizationIT extends BaseTestCase {
 
     @Test(enabled = false)
     @Rollback(value = false)
@@ -31,7 +31,7 @@ public class AuthorizationTest extends BaseTestCase {
         final CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         Assert.assertTrue(!Strings.isNullOrEmpty(getAccessToken()));
         Assert.assertTrue(!Strings.isNullOrEmpty(getEmail()));
-        final HttpGet httpGet = new HttpGet("http://localhost:8080/api/user/"+(getEmail().replace("@","%40")));
+        final HttpGet httpGet = new HttpGet("http://localhost:"+CLIENT_PORT+"/api/user/"+(getEmail().replace("@","%40")));
         httpGet.addHeader("Authorization","Bearer "+getAccessToken());
         final CloseableHttpResponse httpResponse = httpClient.execute(httpGet);
         Assert.assertTrue(httpResponse.getStatusLine().getStatusCode() == HttpStatus.OK.value());

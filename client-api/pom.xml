@@ -68,6 +68,7 @@
                 <configuration>
                     <server>local_tomcat</server>
                     <port>${tomcat.client.port}</port>
+                    <path>/</path>
                     <systemProperties>
                         <DB_SERVER>localhost</DB_SERVER>
                         <DB_PORT>5432</DB_PORT>

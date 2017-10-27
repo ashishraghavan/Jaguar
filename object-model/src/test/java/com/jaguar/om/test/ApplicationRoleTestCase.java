@@ -8,13 +8,15 @@ import com.jaguar.om.impl.Account;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.ApplicationRole;
 import com.jaguar.om.impl.Role;
+import org.springframework.test.annotation.Rollback;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test(groups = "application_role",dependsOnGroups = {"application","role"})
-public class ApplicationRoleTest extends BaseTestCase {
+public class ApplicationRoleTestCase extends BaseTestCase {
 
     @Test
+    @Rollback(value = false)
     public void testAddApplicationGroup() throws Exception {
         //Get the account
         IAccount account = new Account("Jaguar");

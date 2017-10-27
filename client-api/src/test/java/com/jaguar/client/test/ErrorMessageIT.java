@@ -5,7 +5,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test
-public class ErrorMessageTest {
+public class ErrorMessageIT {
 
     @Test
     public void testJSONErrorMessage() throws Exception {

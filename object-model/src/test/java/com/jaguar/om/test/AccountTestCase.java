@@ -15,7 +15,7 @@ import java.util.Map;
  * CRUD operations on the {@link Account}
  */
 @Test(groups = {"account"})
-public class AccountTest extends BaseTestCase {
+public class AccountTestCase extends BaseTestCase {
 
     private Long accountId;
     //create an account
