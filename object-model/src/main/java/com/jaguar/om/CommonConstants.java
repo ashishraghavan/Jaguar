@@ -12,7 +12,8 @@ public class CommonConstants {
     protected static final String CLIENT_ID = "client_id";
     protected static final String DEVICE_UID = "device_uid";
     protected static final String ERROR_REASON = "error_reason";
-
+    protected static final String EMAIL_VERIFICATION_CODE = "code";
+    protected static final String EMAIL_VERIFICATION_ROLE = "role";
 
     //Prompt values for OAUTH2
     protected static final String PROMPT_LOGIN = "login";
@@ -22,4 +23,6 @@ public class CommonConstants {
 
     protected static final String VERIFICATION_EMAIL = "Please verify yourself by clicking on the following link. \n\n" +
             "%s";
+    protected static final String DEVICE_ADDITION_LINK = "You have signed on using the device %s. Click %s for details of this device.";
+    protected static final String NEW_DEVICE_ADDED = "Review Sign-In";
 }

@@ -16,6 +16,7 @@ import org.testng.util.Strings;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import java.net.URI;
+import java.util.regex.Pattern;
 
 @Component
 public class CommonService extends CommonConstants {
@@ -32,7 +33,9 @@ public class CommonService extends CommonConstants {
     protected static final String[] DEVICE_USER_IGNORE_PROPERTIES = USER_IGNORE_PROPERTIES;
     protected static final String context = "/client/api";
     protected static final String files = "/files";
-    protected static final String X_FORWARDED_PROTO = "X_FORWARDED_PROTO";
+    private static final String X_FORWARDED_PROTO = "X_FORWARDED_PROTO";
+    private static final String phoneNumberRegex = "^((\\(\\d{3}\\) ?)|(\\d{3}-))?\\d{3}-\\d{4}$";
+    private static final Pattern pattern = Pattern.compile(phoneNumberRegex);
 
     @Autowired
     public void setDao(IBaseDAO dao) {
@@ -114,6 +117,20 @@ public class CommonService extends CommonConstants {
             serviceLogger.error("There was an error querying the role by name "+roleName+" with the exception "+e.getLocalizedMessage());
             return null;
         }
+    }
+
+    /**
+     * Verifies if a phone number is a US number.
+     * @param phoneNumber The incoming phone number to be verified.
+     * @return {@link Boolean#TRUE} if it is, {@link Boolean#FALSE} otherwise.
+     */
+    protected boolean validatePhoneNumber(final String phoneNumber) {
+        return pattern.matcher(phoneNumber).matches();
+    }
+
+    protected String getUSPhoneNumber(String phoneNumber) {
+        //Append a +1 when sending an SMS.
+        return "+1" + phoneNumber;
     }
 
     /**

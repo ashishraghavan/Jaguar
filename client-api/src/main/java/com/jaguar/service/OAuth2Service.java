@@ -209,7 +209,7 @@ public class OAuth2Service extends CommonService {
         //id is generated using the android serial version and appended before
         //calling this authorization URL.
         //We pass the scopes to the login to get the user after authentication
-        //and update the UserApplication table for roles to be used by
+        //and update the DeviceApplication table for roles to be used by
         //a user against an application.
         final String authQueryParams = "?"
                 + REDIRECT_URI + "=" + redirectUri + "&"
@@ -255,14 +255,15 @@ public class OAuth2Service extends CommonService {
                                         final @FormDataParam("redirect_uri") String redirectUri,
                                         final @FormDataParam("authorization_code") String authorizationCode,
                                         final @FormDataParam("client_id") String clientIdStr,
-                                        final @FormDataParam("scopes") String scopes) {
-        IUserApplication userApplication;
+                                        final @FormDataParam("scopes") String scopes,
+                                        final @FormDataParam("device_uid") String deviceUid) {
+        IDeviceApplication iDeviceApplication;
         if(Strings.isNullOrEmpty(authorization)) {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED)
                     .withMessage("Authorization value").build()).build();
         }
-        final List<String> authorizations = Arrays.asList(IUserApplication.Authorization.stringValues());
+        final List<String> authorizations = Arrays.asList(IDeviceApplication.Authorization.stringValues());
         if(!authorizations.contains(authorization)) {
             //If authorization is not a valid authorization value, we send back an error.
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
@@ -294,6 +295,12 @@ public class OAuth2Service extends CommonService {
                     .build()).build();
         }
 
+        if(Strings.isNullOrEmpty(deviceUid)) {
+            serviceLogger.error("Device Uid is required for updating the authorization status");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("device_uid").build()).build();
+        }
+
         final int clientId = Integer.parseInt(clientIdStr);
         //See if the authorization code is still valid. If we can get the user from the authorization code,
         //it is still valid.
@@ -316,23 +323,32 @@ public class OAuth2Service extends CommonService {
                         .withErrorCode(ErrorMessage.EXCEPTION).withMessage("application with client id "+clientIdStr+" does not exist")
                         .build()).build();
             }
+            //Get the device for which we are updating the authorization.
+            IDevice device = new Device(application.getAccount(),deviceUid);
+            device.setActive(true);
+            device = getDao().loadSingleFiltered(device,null,false);
+            if(device == null) {
+                serviceLogger.error("Invalid device_uid specified for update authorization request");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("The device with uid "+deviceUid+" does not exist").build()).build();
+            }
             //No need for separate blocks for agree & disagree.
-            final IUserApplication.Authorization decision = IUserApplication.Authorization.valueOf(authorization);
+            final IDeviceApplication.Authorization decision = IDeviceApplication.Authorization.valueOf(authorization);
             //Create an entry in the user application table.
-            userApplication = new UserApplication(user,application);
-            final IUserApplication loadedUserApplication = getDao().loadSingleFiltered(userApplication,null,false);
-            if(loadedUserApplication != null) {
+            iDeviceApplication = new DeviceApplication(device,application);
+            final IDeviceApplication loadedDeviceApplication = getDao().loadSingleFiltered(iDeviceApplication,null,false);
+            if(loadedDeviceApplication != null) {
                 //update operation.
                 serviceLogger.info("The application with the client id "+clientIdStr+" has already authorized.");
-                userApplication = loadedUserApplication;
+                iDeviceApplication = loadedDeviceApplication;
             }
             //Set the consent decision.
-            userApplication.setAuthorization(decision);
-            getDao().save(userApplication);
+            iDeviceApplication.setAuthorization(decision);
+            getDao().save(iDeviceApplication);
             //Only if the user agreed to the roles, we send a re-direct.
             final URI uri;
-            if(decision == IUserApplication.Authorization.AGREE) {
-                uri = URI.create(redirectUri + "?" +AUTHORIZATION_CODE + "=" +authorizationCode + "&" + CLIENT_ID + "=" + clientIdStr);
+            if(decision == IDeviceApplication.Authorization.AGREE) {
+                uri = URI.create(redirectUri + "?" +AUTHORIZATION_CODE + "=" +authorizationCode + "&" + CLIENT_ID + "=" + clientIdStr + "&" + DEVICE_UID + "="+deviceUid);
             } else {
                 uri = URI.create(redirectUri + "?" +ERROR_REASON+ "=" +"The user denied the authorization request");
             }
@@ -350,7 +366,8 @@ public class OAuth2Service extends CommonService {
     @Path("/token")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getToken(@FormDataParam("authorization_code") final String authorizationCode,
-                             @FormDataParam("client_id") final String clientIdStr) {
+                             @FormDataParam("client_id") final String clientIdStr,
+                             @FormDataParam("device_uid") final String deviceUidStr) {
         if(Strings.isNullOrEmpty(authorizationCode)) {
             serviceLogger.error("The parameter authorization code is required for this request");
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
@@ -370,6 +387,11 @@ public class OAuth2Service extends CommonService {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.INVALID_ARGUMENT)
                     .withMessage("Client id","123...").build()).build();
+        }
+        if(Strings.isNullOrEmpty(deviceUidStr)) {
+            serviceLogger.error("The device uid is required for this request");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("device_uid").build()).build();
         }
 
 
@@ -396,15 +418,23 @@ public class OAuth2Service extends CommonService {
                         .build()).build();
             }
 
-            IUserApplication userApplication = new UserApplication(user,application);
-            userApplication = getDao().loadSingleFiltered(userApplication,null,false);
-            if(userApplication == null) {
-                serviceLogger.error("The user with email "+user.getEmail()+" cannot be associated with the application "+application.getName());
+            //Get the device using the deviceUidStr parameter.
+            IDevice device = new Device(deviceUidStr,user);
+            device = getDao().loadSingleFiltered(device,null,false);
+            if(device == null) {
+                serviceLogger.error("There is no entry for DeviceUser. This is unexpected. User : "+user.getEmail()+" deviceUid : "+deviceUidStr);
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.NULL_OBJECT_FROM_QUERY).withMessage("deviceUid : "+deviceUidStr).build()).build();
+            }
+            IDeviceApplication deviceApplication = new DeviceApplication(device,application);
+            deviceApplication = getDao().loadSingleFiltered(deviceApplication,null,false);
+            if(deviceApplication == null) {
+                serviceLogger.error("The device with Uid"+deviceUidStr+" cannot be associated with the application "+application.getName());
                 return Response.status(HttpStatus.BAD_REQUEST.value())
                         .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.EXCEPTION)
-                                .withMessage("The user with email "+user.getEmail()+" cannot be associated with the application "+application.getName()).build()).build();
+                                .withMessage("The device with Uid"+deviceUidStr+" cannot be associated with the application "+application.getName()).build()).build();
             }
-            if(userApplication.getAuthorization() == IUserApplication.Authorization.DISAGREE) {
+            if(deviceApplication.getAuthorization() == IDeviceApplication.Authorization.DISAGREE) {
                 //Do not send the token in this case.
                 serviceLogger.error("THe user "+user.getEmail()+" denied authorization for "+application.getName());
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()

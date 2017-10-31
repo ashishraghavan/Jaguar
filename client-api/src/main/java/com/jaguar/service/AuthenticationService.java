@@ -1,12 +1,19 @@
 package com.jaguar.service;
 
+import com.google.common.collect.ImmutableMap;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
-import com.jaguar.om.*;
+import com.jaguar.jersey.provider.JaguarSecurityContext;
+import com.jaguar.om.IApplication;
+import com.jaguar.om.IDevice;
+import com.jaguar.om.IUser;
 import com.jaguar.om.impl.Application;
 import com.jaguar.om.impl.Device;
 import com.jaguar.om.impl.User;
+import com.jaguar.om.notification.Email;
 import com.jaguar.om.notification.EmailManager;
+import com.jaguar.om.notification.SMS;
+import com.jaguar.om.notification.SMSManager;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -24,6 +31,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -190,34 +198,49 @@ public class AuthenticationService extends CommonService {
                 //Since we have associated a device with this user at login time
                 //we sent a notification either on the mobile app (if it's a mobile app) or web notification.
                 //Or an SMS.
-                final String deviceRevocationLink = "This is just a test for device revocation";
-                final INotificationManager notificationManager;
-                final Message message;
-                //TODO Change SMS code block to use SMSManager.
+                final String scheme = getScheme(requestContext);
+                final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
+                final URI deviceDetailLink = URI.create(scheme + "://" + absolutePath.getAuthority() + "/user/"+username+"/device/"+deviceUid);
+                final String notificationBody = String.format(DEVICE_ADDITION_LINK,deviceUid,deviceDetailLink);
+                //Send a notification using both SMS and Email.
+                //First send using the SMSManager.
                 if (!Strings.isNullOrEmpty(user.getPhoneNumber())) {
                     //We prefer to send an SMS if we have the phone number.
                     //construct the SMS message.
-                    /*notificationManager = new SMSManager();
-                    message = SMSManager.smsBuilder()
-                            .messageBody(deviceRevocationLink)
-                            .fromPhone("+14082216275")
-                            .toPhone(user.getPhoneNumber())
-                            .build();*/
-                    notificationManager = new EmailManager();
-                    message = EmailManager.builder()
-                            .body(deviceRevocationLink)
-                            .subject("Test Device Revocation")
-                            .to(user.getEmail()).build();
-                } else {
-                    //Send an email through our SMTP server.
-                    //Construct the EMail message.
-                    notificationManager = new EmailManager();
-                    message = EmailManager.builder()
-                            .body(deviceRevocationLink)
-                            .subject("Test Device Revocation")
-                            .to(user.getEmail()).build();
+                    //Get phone number in the proper format if it is not.
+                    if(validatePhoneNumber(user.getPhoneNumber())) {
+                        final String toPhoneNumber = getUSPhoneNumber(user.getPhoneNumber());
+                        try {
+                            final SMSManager smsManager = new SMSManager();
+                            final SMS smsMessage = SMSManager.smsBuilder()
+                                    .messageBody(notificationBody)
+                                    .toPhone(toPhoneNumber)
+                                    .build();
+                            smsManager.sendSMS(smsMessage);
+                        } catch (Exception e) {
+                            serviceLogger.error("There was an error sending SMS message to "+username+" with device_uid "+deviceUid+" with message "+e.getMessage());
+                            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                                    .withErrorCode(ErrorMessage.EXCEPTION).withMessage("Failed to send a message to phone number "+user.getPhoneNumber()).build()).build();
+                        }
+                    }
                 }
-                notificationManager.sendNotificationMessage(message);
+
+                //Send an email through our SMTP server.
+                //Construct the EMail message.
+                try {
+                    final EmailManager emailManager = new EmailManager();
+                    final Email emailMessage = EmailManager.builder()
+                            .body(notificationBody)
+                            .subject(NEW_DEVICE_ADDED)
+                            .to(user.getEmail())
+                            .build();
+                    emailManager.sendEmail(emailMessage);
+                } catch (Exception e) {
+                    serviceLogger.error("There was an error sending email message to "+username+" with email "+username+" with exception "+e.getMessage());
+                    return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.EXCEPTION).withMessage("Failed to send an email to "+username).build()).build();
+                }
+
             }
             //Do the actual authentication.
             user.setPassword(password);
@@ -238,9 +261,21 @@ public class AuthenticationService extends CommonService {
             //with the authorization code appended to the URI.
             if(isConsentFlow) {
                 //We need the re-redirect URI for this case.
+                URI finalRedirectURI = null;
                 if(Strings.isNullOrEmpty(redirectUri)) {
-                    return Response.status(HttpStatus.BAD_REQUEST.value())
-                            .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("Redirect URI").build()).build();
+                    //try getting the re-direct URI from the application record.
+                    final String strRedirectURI = application.getRedirectURI();
+                    if(!Strings.isNullOrEmpty(strRedirectURI)) {
+                        finalRedirectURI = URI.create(strRedirectURI);
+                    }
+                } else {
+                    finalRedirectURI = URI.create(redirectUri);
+                }
+
+                if(finalRedirectURI == null || Strings.isNullOrEmpty(String.valueOf(finalRedirectURI))) {
+                    serviceLogger.error("The redirect-URI cannot be obtained from the application record.");
+                    return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("redirect_uri").build()).build();
                 }
                 //Create the authorization code.
                 final String authorizationCode = UUID.randomUUID().toString();
@@ -261,7 +296,63 @@ public class AuthenticationService extends CommonService {
             return Response.ok().build();
         } catch (Exception e) {
             authorizationServiceLogger.error("Error invoking the service login with error message " + e.getLocalizedMessage());
-            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(wrapExceptionForEntity(e)).build();
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.EXCEPTION).withMessage("There was an error invoking the service").build()).build();
+        }
+    }
+
+    @POST
+    @Path("/refresh")
+    @Transactional
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response refreshToken(@FormDataParam("access_token") final String accessToken,
+                                 @FormDataParam("refresh_token") final String refreshToken,
+                                 @Context JaguarSecurityContext securityContext) {
+        //The access token needs to be valid when the refresh token call is made.
+        final IUser userPrincipal = (IUser)securityContext.getUserPrincipal();
+        if(userPrincipal == null) {
+            serviceLogger.error("The user principal from the authorization header is null/invalid");
+            return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_AUTHORIZED)).build();
+        }
+        if(Strings.isNullOrEmpty(accessToken)) {
+            serviceLogger.error("The parameter access token is required for this request");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("access_token").build()).build();
+        }
+        if(Strings.isNullOrEmpty(refreshToken)) {
+            serviceLogger.error("The parameter refresh token is required for this request");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("refresh_token").build()).build();
+        }
+        //Get the user using the access token.
+        final IUser authenticatedUser = getCacheManager().getUserAuthorizationCache().getIfPresent(accessToken);
+        if(authenticatedUser == null) {
+            serviceLogger.error("The access token does not correspond to any authenticated user");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The token "+accessToken+" does not correspond to an authenticated user").build()).build();
+        }
+        //Check for the refresh token too.
+        final IUser refreshTokenUser = getCacheManager().getRefreshTokenCache().getIfPresent(refreshToken);
+        if(refreshTokenUser == null) {
+            serviceLogger.error("The refresh token "+refreshToken+" does not correspond to any authenticated user");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The refresh token "+refreshToken+" does not correspond to an authenticated user").build()).build();
+        }
+        //Generate a new token and save it into the cache.
+        final String generatedAccessToken = UUID.randomUUID().toString();
+        getCacheManager().getUserAuthorizationCache().put(generatedAccessToken,authenticatedUser);
+        final String generatedRefreshToken = UUID.randomUUID().toString();
+        getCacheManager().getRefreshTokenCache().put(generatedRefreshToken,authenticatedUser);
+        final Map<String,String> tokenMap = ImmutableMap.<String,String>builder()
+                .put("access_token",generatedAccessToken)
+                .put("refresh_token",generatedRefreshToken)
+                .build();
+        try {
+            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(tokenMap)).build();
+        } catch (Exception e) {
+            serviceLogger.error("There was an error writing the refresh token response as JSON with exception "+e.getLocalizedMessage());
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
         }
     }
 }

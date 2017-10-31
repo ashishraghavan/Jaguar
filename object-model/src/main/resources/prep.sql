@@ -21,5 +21,4 @@ CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON jaguar_device FOR EAC
 CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON device_application FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON jaguar_role FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON jaguar_user FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
-CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON user_application FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on user_role FOR EACH ROW EXECUTE PROCEDURE update_timestamp();

@@ -19,6 +19,10 @@ public class DeviceApplication extends CommonObject implements IDeviceApplicatio
         this.application = application;
     }
 
+    @Column(name = "authorization_status")
+    @Enumerated(value = EnumType.STRING)
+    private Authorization authorization;
+
     @ManyToOne(targetEntity = Device.class,optional = false)
     @JoinColumn(name = "device_id",nullable = false,insertable = true,updatable = true)
     @ForeignKey(name = "fk_device_application_device_id")
@@ -43,5 +47,15 @@ public class DeviceApplication extends CommonObject implements IDeviceApplicatio
 
     public void setApplication(IApplication application) {
         this.application = application;
+    }
+
+    @Override
+    public Authorization getAuthorization() {
+        return this.authorization;
+    }
+
+    @Override
+    public void setAuthorization(Authorization authorization) {
+        this.authorization = authorization;
     }
 }

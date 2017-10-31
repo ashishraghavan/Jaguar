@@ -80,6 +80,7 @@ img.avatar {
         formData.set('authorization',authorization);
         formData.set('client_id',getUrlParameter('client_id'));
         formData.set('scopes',getUrlParameter('scopes'));
+        formData.set("device_uid",getUrlParameter('device_uid'));
         consentHttpRequest.open('POST',consentUrl,true);
         consentHttpRequest.onreadystatechange = function () {
             if(consentHttpRequest.readyState === XMLHttpRequest.DONE) {

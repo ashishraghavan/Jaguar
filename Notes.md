@@ -4,6 +4,8 @@ When not using the jersey-spring3 integration dependency, the setter method with
 
 Make sure to annotate all methods with the appropriate HTTP methods. (@GET,@POST,@PUT) etc. When accessing the link through the browser (from an email maybe), it doesn't correctly return the response.
 
+For now, registration verification is only by EMAIL. In a later version,we will be adding verification by SMS too.
+
 When you use Cascade=CaseType.ALL, if a device is deleted, all its associated relationships will also be deleted. This may or may not be an advantage.
 
 #################################################################################

@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class UserIT extends BaseTestCase {
 
     private static final Logger userTestLogger = Logger.getLogger(UserIT.class.getSimpleName());
-    private static final Set<String> queryKeys = ImmutableSet.of("email","code","device_uid","role");
+    private static final Set<String> queryKeys = ImmutableSet.of("email","code","device_uid","role","client_id");
     private String authToken;
     private final Map<String,String> userRegistrationMap = ImmutableMap.<String,String>builder()
             .put("username","jaguardevelopmental@gmail.com")
@@ -260,7 +260,8 @@ public class UserIT extends BaseTestCase {
         final HttpPost httpPost = new HttpPost("http://localhost:"+CLIENT_PORT+"/client/api/login");
         httpPost.setEntity(loginFormEntityBuilder.build());
         final CloseableHttpResponse afterLoginResponse = httpClient.execute(httpPost);
-        Assert.assertTrue(afterLoginResponse.getStatusLine().getStatusCode() == HttpStatus.SC_SEE_OTHER,"Failed with message "+afterLoginResponse.getStatusLine());
+        final String afterLoginResponseStr = EntityUtils.toString(afterLoginResponse.getEntity());
+        Assert.assertTrue(afterLoginResponse.getStatusLine().getStatusCode() == HttpStatus.SC_SEE_OTHER,"Failed with message "+afterLoginResponseStr);
         final org.apache.http.Header afterLoginHeader = afterLoginResponse.getFirstHeader("Location");
         Assert.assertNotNull(afterLoginHeader);
         final String afterLoginHeaderValue = afterLoginHeader.getValue();
@@ -270,15 +271,14 @@ public class UserIT extends BaseTestCase {
         final String consentQueryStr = consentUri.getQuery();
         final String[] splitConsentStr = consentQueryStr.split("&");
         Assert.assertTrue(splitConsentStr.length > 0);
-        EntityUtils.consume(afterLoginResponse.getEntity());
         final HttpGet getConsentRequest = new HttpGet(consentUri);
         final CloseableHttpResponse beforeConsentResponse = httpClient.execute(getConsentRequest);
+        final String beforeConsentResponseStr = EntityUtils.toString(beforeConsentResponse.getEntity());
         //Get the consent page.
-        Assert.assertTrue(beforeConsentResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK,"Failed with message "+beforeConsentResponse.getStatusLine());
+        Assert.assertTrue(beforeConsentResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK,"Failed with message "+beforeConsentResponseStr);
         Assert.assertNotNull(beforeConsentResponse.getFirstHeader("Content-Type"));
         Assert.assertNotNull(beforeConsentResponse.getFirstHeader("Content-Type").getValue());
         Assert.assertTrue(beforeConsentResponse.getFirstHeader("Content-Type").getValue().equals("text/html"));
-        EntityUtils.consume(beforeConsentResponse.getEntity());
         //Update the consent.
         final HttpPost updateConsentPost = new HttpPost("http://localhost:"+CLIENT_PORT+"/client/api/oauth/update");
         final MultipartEntityBuilder consentEntityBuilder = MultipartEntityBuilder.create();
@@ -287,10 +287,11 @@ public class UserIT extends BaseTestCase {
             consentEntityBuilder.addTextBody(splitConsentKV[0],splitConsentKV[1]);
         }
         //Set the authorization to AGREE.
-        consentEntityBuilder.addTextBody("authorization",String.valueOf(IUserApplication.Authorization.AGREE));
+        consentEntityBuilder.addTextBody("authorization",String.valueOf(IDeviceApplication.Authorization.AGREE));
         updateConsentPost.setEntity(consentEntityBuilder.build());
         final CloseableHttpResponse authorizationResponse = httpClient.execute(updateConsentPost);
-        Assert.assertTrue(authorizationResponse.getStatusLine().getStatusCode() == HttpStatus.SC_SEE_OTHER,"Failed with message "+authorizationResponse.getStatusLine());
+        final String authorizationResponseStr = EntityUtils.toString(authorizationResponse.getEntity());
+        Assert.assertTrue(authorizationResponse.getStatusLine().getStatusCode() == HttpStatus.SC_SEE_OTHER,"Failed with message "+authorizationResponseStr);
         final org.apache.http.Header redirectionHeader = authorizationResponse.getFirstHeader("Location");
         Assert.assertNotNull(redirectionHeader);
         final String redirectionHeaderValue = redirectionHeader.getValue();
@@ -311,15 +312,15 @@ public class UserIT extends BaseTestCase {
         }
         Assert.assertNotNull(authorizationCode);
         //Finally get the token using this code.
-        EntityUtils.consume(authorizationResponse.getEntity());
         final HttpPost tokenPost = new HttpPost("http://localhost:"+CLIENT_PORT+"/client/api/oauth/token");
         final MultipartEntityBuilder tokenBuilder = MultipartEntityBuilder.create();
         tokenBuilder.addTextBody("authorization_code",authorizationCode);
         tokenBuilder.addTextBody("client_id",userRegistrationMap.get("client_id"));
+        tokenBuilder.addTextBody("device_uid",userRegistrationMap.get("device_uid"));
         tokenPost.setEntity(tokenBuilder.build());
         final CloseableHttpResponse tokenResponse = httpClient.execute(tokenPost);
-        Assert.assertTrue(tokenResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK,"Failed with message "+tokenResponse.getStatusLine());
         final String stringifiedTokenResponse = EntityUtils.toString(tokenResponse.getEntity());
+        Assert.assertTrue(tokenResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK,"Failed with message "+stringifiedTokenResponse);
         final Map<String,Object> tokenMap = mapper.readValue(stringifiedTokenResponse,typeMapStringObject);
         Assert.assertNotNull(tokenMap.get("access_token"));
         Assert.assertNotNull(tokenMap.get("refresh_token"));
@@ -378,12 +379,12 @@ public class UserIT extends BaseTestCase {
         userRole = getDao().loadSingleFiltered(userRole,null,false);
         Assert.assertNotNull(userRole);
         getDao().remove(userRole);
-        //Remove UserApplication now
-        IUserApplication userApplication = new UserApplication(user,application);
-        userApplication.setActive(true);
-        userApplication = getDao().loadSingleFiltered(userApplication,null,false);
-        Assert.assertNotNull(userApplication);
-        getDao().remove(userApplication);
+        //Remove DeviceApplication now
+        IDeviceApplication deviceApplication = new DeviceApplication(device,application);
+        deviceApplication.setActive(true);
+        deviceApplication = getDao().loadSingleFiltered(deviceApplication,null,false);
+        Assert.assertNotNull(deviceApplication);
+        getDao().remove(deviceApplication);
         getDao().remove(device);
     }
 }

@@ -209,20 +209,33 @@ public class UserService extends CommonService {
             if(!Strings.isNullOrEmpty(notificationServiceId)) {
                 device.setNotificationServiceId(notificationServiceId);
             }
-
             //Now do all operations for the device.
             device.setActive(false);
             device = getDao().save(device);
+            //Now save the DeviceApplication, but mark it as inactive.
+            IDeviceApplication deviceApplication = new DeviceApplication(device,application);
+            deviceApplication.setActive(false);
+            IDeviceApplication deviceApplicationFromDB = getDao().loadSingleFiltered(deviceApplication,null,false);
+            if(deviceApplicationFromDB == null) {
+                //Create a device application.
+                getDao().save(deviceApplication);
+            }
+            final String scheme = getScheme(requestContext);
+            final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
             //If the user has a phone number, use that for verification. If not, use email.
             //For now, we are using only email to send verification links. Once, the SMS
             //gateway is setup, we will start sending verification codes to phone numbers provided.
             //Generate a link first.
+            //Save an entry in the DeviceApplication table
             final String verificationCode = UUID.randomUUID().toString();
             //Add this code to the cache <code,email>
             //This code will be valid only for 10 minutes. i.e the user has to click this
             //verification link within 10 minutes after they register.
-            final String verificationUri = requestContext.getUriInfo().getBaseUri()
-                    + "user/verify?email="+user.getEmail()+ "&" +"code=" + verificationCode + "&" + "device_uid="+device.getDeviceUId() + "&" + "role="+roleName;
+            final URI verificationUri = URI.create(scheme + "://" +absolutePath.getAuthority()+ context + "/user/verify?email="+user.getEmail()+ "&"
+                    + EMAIL_VERIFICATION_CODE + "=" +verificationCode + "&"
+                    + DEVICE_UID + "=" +device.getDeviceUId() + "&"
+                    + CLIENT_ID + "=" + clientId + "&"
+                    + EMAIL_VERIFICATION_ROLE + "=" +roleName);
             final Email email = EmailManager.builder().subject("Verify your registration")
                     .body(String.format(VERIFICATION_EMAIL,verificationUri)).to(user.getEmail()).build();
             emailManager.sendEmail(email);
@@ -236,16 +249,26 @@ public class UserService extends CommonService {
         }
     }
 
+    /**
+     * This method verifies the user registration either by email or by phone.
+     * @param email The email query parameter that was sent to the registering user's email/phone.
+     * @param code The code that was generated during the registration process.
+     * @param deviceUId The device_uid of the device that was registered during user registration.
+     * @param roleName The roles that this user requested during the registration process.
+     * @param requestContext The container request context (provided by Jersey).
+     * @return {@link HttpStatus#OK} if the verification was successful, {@link HttpStatus#BAD_REQUEST} if the request failed for some reason.
+     */
     @GET
     @Path("/verify")
     @Produces({MediaType.APPLICATION_JSON})
     @Transactional
     @PermitAll
-    public Response verifyUserRegistration(final @QueryParam("email") String email,
-                                           final @QueryParam("code") String code,
-                                           final @QueryParam("device_uid") String deviceUId,
-                                           final @QueryParam("role") String roleName,
-                                           final @Context ContainerRequestContext requestContext) {
+    public Response verifyUserRegistrationByEmail(final @QueryParam("email") String email,
+                                                  final @QueryParam("code") String code,
+                                                  final @QueryParam("device_uid") String deviceUId,
+                                                  final @QueryParam("role") String roleName,
+                                                  final @QueryParam("client_id") String clientIdStr,
+                                                  final @Context ContainerRequestContext requestContext) {
         //Sanity checks. Any missing query parameter will result in an internal server error.
         if(Strings.isNullOrEmpty(email)) {
             serviceLogger.error("The parameter email was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error.");
@@ -264,7 +287,18 @@ public class UserService extends CommonService {
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
                     .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("device_uid").build()).build();
         }
+        if(Strings.isNullOrEmpty(clientIdStr)) {
+            serviceLogger.error("The parameter client_id was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.ARGUMENT_REQUIRED).withMessage("client_id").build()).build();
+        }
 
+        if(!NumberUtils.isCreatable(clientIdStr)) {
+            serviceLogger.error("The client id is not in the correct format, expected client id to be an integer, but found "+clientIdStr);
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage("client_id","123...").build()).build();
+        }
+        Integer clientId = Integer.parseInt(clientIdStr);
         if(Strings.isNullOrEmpty(roleName)) {
             serviceLogger.error("The parameter role was not specified for this request. This is most likely due to an internal server error during the registration call or a programming error");
             return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
@@ -299,9 +333,28 @@ public class UserService extends CommonService {
                 return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
                         .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
             }
+            //Get the DeviceApplication.
+            IApplication application = new Application(clientId);
+            application.setActive(true);
+            application = getDao().loadSingleFiltered(application,null,false);
+            if(application == null) {
+                serviceLogger.error("There is no application with the client_id "+clientIdStr);
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.NULL_OBJECT_FROM_QUERY).withMessage("device_uid").build()).build();
+            }
             //save the device after setting it to active.
             device.setActive(true);
             device = getDao().save(device);
+            IDeviceApplication deviceApplication = new DeviceApplication(device,application);
+            deviceApplication.setActive(false);
+            deviceApplication = getDao().loadSingleFiltered(deviceApplication,null,false);
+            if(deviceApplication == null) {
+                serviceLogger.error("There is no DeviceApplication record with device_uid "+deviceUId+" and application "+application.getName());
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.NULL_OBJECT_FROM_QUERY).withMessage("DeviceApplication "+deviceUId+" application "+application.getName()).build()).build();
+            }
+            deviceApplication.setActive(true);
+            getDao().save(deviceApplication);
             return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(device)).build();
         } catch (Exception e) {
             serviceLogger.error("An error occurred while querying for either DeviceUser or User with exception message "+e.getLocalizedMessage());
@@ -462,5 +515,54 @@ public class UserService extends CommonService {
                     .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
         }
         return Response.ok().build();
+    }
+
+    /**
+     * Get device details using the userId and the deviceUid.
+     * @param userName The email of the registered user.
+     * @param deviceUid The deviceUid of the device that this user registered with.
+     * @param securityContext The security context {@link JaguarSecurityContext} extening {@link IUser}
+     *                        to obtain the user principal.
+     * @return {@link HttpStatus#OK} with device details, a status 400 or 500 if there was an error.
+     */
+    @GET
+    @Path("/{userId}/device/{deviceUid}")
+    @Transactional
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getDeviceDetails(@PathParam("userId") final String userName,
+                                     @PathParam("deviceUid") final String deviceUid,
+                                     @Context JaguarSecurityContext securityContext) {
+        //userName & deviceUid can never be null. So don't check for those.
+        //Get the user first.
+        IUser authenticatedUser = (IUser)securityContext.getUserPrincipal();
+        if(authenticatedUser == null) {
+            serviceLogger.error("There was an error obtaining the authenticated user from the Security Context");
+            return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build();
+        }
+        final Set<IDevice> userDevices = authenticatedUser.getDevices();
+        if(userDevices == null || userDevices.isEmpty()) {
+            serviceLogger.error("The user "+authenticatedUser.getEmail()+" does not have any devices associated");
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage("The user "+authenticatedUser.getEmail()+" does not have any devices associated").build()).build();
+        }
+        IDevice userDevice = null;
+        for(IDevice device : userDevices) {
+            if(device.getDeviceUId().equals(deviceUid)) {
+                userDevice = device;
+            }
+        }
+        if(userDevice == null) {
+            serviceLogger.error("There is no device with id "+deviceUid+" for the user "+userName);
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.FREE_FORM).withMessage("There is no device with id "+deviceUid+" for the user "+userName).build()).build();
+        }
+        try {
+            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(userDevice)).build();
+        } catch (Exception e) {
+            serviceLogger.error("There was an error sending the JSON response for UserDevice with exception "+e.getLocalizedMessage());
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
+        }
     }
 }

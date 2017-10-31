@@ -10,7 +10,7 @@
         <class>com.jaguar.om.impl.DeviceApplication</class>
         <class>com.jaguar.om.impl.Role</class>
         <class>com.jaguar.om.impl.User</class>
-        <class>com.jaguar.om.impl.UserApplication</class>
+        <class>com.jaguar.om.impl.DeviceApplication</class>
         <class>com.jaguar.om.impl.UserRole</class>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>

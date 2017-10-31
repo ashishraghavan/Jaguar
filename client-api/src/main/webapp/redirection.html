@@ -5,6 +5,7 @@
 <script type="text/javascript">
     var authorizationCode = getUrlParameter('authorization_code');
     var clientId = getUrlParameter('client_id');
+    var deviceUid = getUrlParameter('device_uid');
     if(authorizationCode === '' || authorizationCode === null || authorizationCode === undefined) {
         console.log('The authorization code obtained was null/empty/undefined. Can\'t continue');
         alert('The authorization code obtained was null/empty/undefined. Can\'t continue');
@@ -15,12 +16,18 @@
         alert('The client id obtained from the re-direction URL was null/empty/undefined.');
     }
 
+    if(deviceUid === '' || deviceUid === null || deviceUid === undefined) {
+        console.log('The device_uid obtained from the re-direction URL was null/empty/undefined.');
+        alert('The device_uid obtained from the re-direction URL was null/empty/undefined.');
+    }
+
     var tokenRequest = new XMLHttpRequest();
     var tokenURL = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
         "/" + "client/api/oauth/token";
     var formData = new FormData();
     formData.set('authorization_code',authorizationCode);
     formData.set('client_id',clientId);
+    formData.set('device_uid',deviceUid);
     tokenRequest.open('POST',tokenURL,true);
     tokenRequest.onreadystatechange = function () {
         var jsonResponse;
