@@ -32,7 +32,9 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
                 //First check if the jaguar_cookie is present
                 final String authorization = requestContext.getHeaderString(AUTHORIZATION);
                 if(Strings.isNullOrEmpty(authorization)) {
-                    requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).build());
+                    requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
+                            .withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build());
+                    return;
                 }
                 //Bearer 3456.....
                 final String[] authTokenized = authorization.trim().split(" ");
@@ -40,6 +42,7 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
                    requestContext.abortWith(Response.status(HttpStatus.BAD_REQUEST.value())
                            .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.FREE_FORM)
                                    .withMessage("The access token is expected to be of the format Bearer token").build()).build());
+                   return;
                 }
                 final String authToken = authTokenized[1];
                 //Check against the CacheManager.
@@ -47,6 +50,7 @@ public class OAuthFilter extends BaseFilter implements ContainerRequestFilter {
                 if(authorizedUser == null) {
                     requestContext.abortWith(Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
                             .withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build());
+                    return;
                 }
                 //Create the security context
                 requestContext.setSecurityContext(new JaguarSecurityContext(authorizedUser,requestContext.getUriInfo()));

@@ -320,8 +320,10 @@ public class OAuth2Service extends CommonService {
             if(application == null) {
                 serviceLogger.error("The application with client id "+clientIdStr+" does not exist");
                 return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
-                        .withErrorCode(ErrorMessage.EXCEPTION).withMessage("application with client id "+clientIdStr+" does not exist")
-                        .build()).build();
+                        .withErrorCode(ErrorMessage.EXCEPTION)
+                        .withMessage("application with client id "+clientIdStr+" does not exist")
+                        .build())
+                        .build();
             }
             //Get the device for which we are updating the authorization.
             IDevice device = new Device(application.getAccount(),deviceUid);
