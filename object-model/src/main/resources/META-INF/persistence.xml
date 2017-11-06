@@ -12,6 +12,9 @@
         <class>com.jaguar.om.impl.User</class>
         <class>com.jaguar.om.impl.DeviceApplication</class>
         <class>com.jaguar.om.impl.UserRole</class>
+        <class>com.jaguar.om.impl.Category</class>
+        <class>com.jaguar.om.impl.Filter</class>
+        <class>com.jaguar.om.impl.FilterValue</class>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>
         <property name="hibernate.format_sql" value="true" />

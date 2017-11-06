@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.jaguar.om.IBaseDAO;
+import com.jaguar.om.ICategoryDAO;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -16,6 +17,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTransactionalTestNGSpringContextTests;
@@ -33,20 +35,32 @@ public abstract class BaseTestCase extends AbstractTransactionalTestNGSpringCont
     protected final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
     private IBaseDAO dao;
+    private ICategoryDAO categoryDAO;
 
     @Autowired
     public void setDao(IBaseDAO dao) {
         this.dao = dao;
     }
 
+    @Autowired
+    @Qualifier(value = "categoryDao")
+    public void setCategoryDAO(ICategoryDAO categoryDAO) {
+        this.categoryDAO = categoryDAO;
+    }
+
     protected IBaseDAO getDao() {
         return this.dao;
+    }
+    ICategoryDAO getCategoryDAO() {
+        return this.categoryDAO;
     }
     private static final TypeFactory typeFactory = TypeFactory.defaultInstance();
     protected static final MapType typeMapStringObject
             = typeFactory.constructMapType(HashMap.class, String.class, Object.class);
+    @SuppressWarnings("unused")
     protected static final MapType typeMapStringString
             = typeFactory.constructMapType(HashMap.class, String.class, String.class);
+    @SuppressWarnings("unused")
     protected static CollectionType typeListMap = typeFactory.constructCollectionType(ArrayList.class,
             typeFactory.constructType(HashMap.class));
     private String email;
