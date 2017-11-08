@@ -63,21 +63,23 @@ public class Application extends CommonObject implements IApplication{
         super();
     }
 
+    //To be used when trying to fetch an application with a clientid.
     public Application(final Integer clientId) {
-        super();
+        this();
         this.clientId = clientId;
     }
+
     public Application(final IAccount account, final String name, final String redirectUri, ApplicationType applicationType,final String packageName) {
-        this.account = account;
-        this.clientId = Utils.generateKey();
+        this(account,name);
+        this.clientId = Utils.generateApplicationKey();
         this.clientSecret = UUID.randomUUID().toString();
-        this.name = name;
         this.redirectUri = redirectUri;
         this.applicationType = applicationType;
         this.packageName = packageName;
     }
 
     public Application(final IAccount account, final String name) {
+        this();
         this.account = account;
         this.name = name;
     }

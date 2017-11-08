@@ -82,7 +82,8 @@ public class CategoryTestCase extends BaseTestCase {
         }
     }
 
-    @Test(dependsOnMethods = "getCategories",alwaysRun = true)
+    //Re-enable when running this test case separately.
+    @Test(dependsOnMethods = "getCategories",alwaysRun = true,enabled = false)
     @Rollback(value = false)
     public void deleteAllCategories() throws Exception {
         ICategory phoneCategory = new Category("Phones");

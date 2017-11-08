@@ -8,13 +8,22 @@ public interface IProduct extends ICommonObject {
     void setDescription(final String description);
     void setPrice(final float price);
     void setBuyingFormat(BuyingFormat buyingFormat);
-    void setCategory(final Set<ICategory> categories);
-    void setImages(final Set<IImage> images);
+    void setCategory(final ICategory category);
+    void setImages(final Set<IImage> productImages);
+    void setUser(final IUser user);
+    void setUPC(final String upc);
+    void setMPN(final String mpn);
+    void setCurrency(final ICurrency currency);
 
     String getTitle();
     String getDescription();
     float getPrice();
     BuyingFormat getBuyingFormat();
-    Set<ICategory> getCategories();
-    Set<IImage> getImages();
+    ICategory getCategory();
+    Set<IImage> getProductImages();
+    IUser getUser();
+    String getUPC();
+    String getMPN();
+    String getItemNumber();
+    ICurrency getCurrency();
 }

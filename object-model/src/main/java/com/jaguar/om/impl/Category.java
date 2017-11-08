@@ -1,5 +1,6 @@
 package com.jaguar.om.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.ICategory;
 import com.jaguar.om.IFilter;
 import org.hibernate.annotations.LazyCollection;
@@ -27,14 +28,17 @@ public class Category extends CommonObject implements ICategory {
         this.description = description;
     }
 
+    @JsonIgnore
     @OneToMany(targetEntity = Category.class,cascade = CascadeType.ALL,fetch = FetchType.EAGER,mappedBy = "parentCategory",orphanRemoval = true)
     @LazyCollection(LazyCollectionOption.EXTRA)
     private Set<ICategory> childCategories;
 
+    @JsonIgnore
     @OneToMany(targetEntity = Filter.class,cascade = CascadeType.ALL,fetch = FetchType.LAZY,mappedBy = "category",orphanRemoval = true)
     @LazyCollection(LazyCollectionOption.EXTRA)
     private Set<IFilter> filters;
 
+    @JsonIgnore
     @ManyToOne(targetEntity = Category.class,cascade = CascadeType.ALL)
     @JoinColumn(name = "parent_category_id")
     @org.hibernate.annotations.ForeignKey(name = "fk_parent_category_id")

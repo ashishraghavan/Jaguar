@@ -8,6 +8,8 @@ For now, registration verification is only by EMAIL. In a later version,we will 
 
 When you use Cascade=CaseType.ALL, if a device is deleted, all its associated relationships will also be deleted. This may or may not be an advantage.
 
+To run just hbm2ddl maven goal
+mvn -U -X hibernate3:hbm2ddl
 
 Google Cloud Console details :
 ssh -i ~/Production/google-cloud-platform/jaguar_google_cloud_platform ashishhraghavan13687@35.196.113.4

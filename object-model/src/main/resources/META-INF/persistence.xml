@@ -15,9 +15,13 @@
         <class>com.jaguar.om.impl.Category</class>
         <class>com.jaguar.om.impl.Filter</class>
         <class>com.jaguar.om.impl.FilterValue</class>
+        <class>com.jaguar.om.impl.Product</class>
+        <class>com.jaguar.om.impl.Image</class>
+        <class>com.jaguar.om.impl.Currency</class>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>
         <property name="hibernate.format_sql" value="true" />
+        <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
     </properties>
     </persistence-unit>
 </persistence>

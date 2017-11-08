@@ -10,6 +10,14 @@ import javax.persistence.*;
 @AttributeOverride(name = "id",column = @Column(name = "filter_value_id"))
 public class FilterValue extends CommonObject implements IFilterValue {
 
+    public FilterValue(){super();}
+
+    public FilterValue(final IFilter filter,String value) {
+        this();
+        this.filter = filter;
+        this.value = value;
+    }
+
     //Many filter values can have one filter.
     @ManyToOne(targetEntity = Filter.class,cascade = CascadeType.ALL)
     @JoinColumn(name = "filter_id")

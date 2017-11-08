@@ -22,3 +22,8 @@ CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON device_application FO
 CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON jaguar_role FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE TRIGGER update_timestamp BEFORE INSERT OR UPDATE ON jaguar_user FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on user_role FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on category FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on filter FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on filter_value FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on product FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+CREATE TRIGGER update_timestamp BEFORE INSERT or UPDATE on currency FOR EACH ROW EXECUTE PROCEDURE update_timestamp();

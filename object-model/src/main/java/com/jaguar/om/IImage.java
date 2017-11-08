@@ -7,7 +7,9 @@ package com.jaguar.om;
  */
 public interface IImage extends ICommonObject {
     void setProduct(final IProduct product);
+    void setFileName(final String fileName);
+    String getFileName();
     IProduct getProduct();
-    void setImage(final byte[] image);
-    byte[] getImage();
+    void setProductImage(final byte[] productImage);
+    byte[] getProductImage();
 }
