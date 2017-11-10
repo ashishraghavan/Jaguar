@@ -6,11 +6,16 @@ import com.jaguar.om.enums.CurrencySymbolPosition;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "currency",uniqueConstraints = {@UniqueConstraint(columnNames = {"country_code"})})
+@Table(name = "currency",uniqueConstraints = {@UniqueConstraint(columnNames = {"currency_name"})})
 public class Currency extends CommonObject implements ICurrency {
 
     public Currency() {
         super();
+    }
+
+    public Currency(final String currencyName) {
+        this();
+        this.currencyName = currencyName;
     }
 
     public Currency(final String symbol,final String countryCode) {
@@ -19,7 +24,7 @@ public class Currency extends CommonObject implements ICurrency {
         this.countryCode = countryCode;
     }
 
-    @Column(name = "country_code",nullable = false,length = 2)
+    @Column(name = "country_code",nullable = false)
     private String countryCode;
 
     @Column(name = "country_name",nullable = false)
@@ -27,6 +32,9 @@ public class Currency extends CommonObject implements ICurrency {
 
     @Column(name = "symbol",nullable = false,length = 3)
     private String symbol;
+
+    @Column(name = "currency_name",nullable = false)
+    private String currencyName;
 
     @Enumerated
     @Column(name = "symbol_position",nullable = false)
@@ -53,6 +61,11 @@ public class Currency extends CommonObject implements ICurrency {
     }
 
     @Override
+    public void setCurrencyName(String currencyName) {
+        this.currencyName = currencyName;
+    }
+
+    @Override
     public String getSymbol() {
         return this.symbol;
     }
@@ -70,5 +83,10 @@ public class Currency extends CommonObject implements ICurrency {
     @Override
     public CurrencySymbolPosition getSymbolPosition() {
         return this.symbolPosition;
+    }
+
+    @Override
+    public String getCurrencyName() {
+        return this.currencyName;
     }
 }

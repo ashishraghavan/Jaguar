@@ -23,5 +23,6 @@ public class Application extends ResourceConfig {
         register(OAuth2Service.class);
         register(MultiPartFeature.class);
         register(UserService.class);
+        register(ProductService.class);
     }
 }

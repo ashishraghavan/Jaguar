@@ -67,7 +67,6 @@ public class ProductTestCase extends BaseTestCase {
         //For test purposes, we use the generateItemNumber method to set the UPC.
         cellPhone.setUPC(Utils.generateItemNumber());
         //For test purposes, we use the generateItemNumber method to set the MPN.
-        cellPhone.setMPN(Utils.generateItemNumber());
         cellPhone = getDao().save(cellPhone);
         Assert.assertNotNull(cellPhone);
         Assert.assertNotNull(cellPhone.getItemNumber());
@@ -95,5 +94,8 @@ public class ProductTestCase extends BaseTestCase {
         Assert.assertTrue(products.size() >= 1);
         final IProduct productFromList = products.get(0);
         Assert.assertTrue(productFromList.getItemNumber().equals(product.getItemNumber()));
+        Assert.assertNotNull(productFromList.getProductImages());
+        Assert.assertTrue(productFromList.getProductImages().size() > 0);
+        Assert.assertTrue(productFromList.getProductImages().size() == 6);
     }
 }

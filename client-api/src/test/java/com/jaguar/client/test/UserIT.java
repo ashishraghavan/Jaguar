@@ -342,7 +342,7 @@ public class UserIT extends BaseTestCase {
         Assert.assertTrue((resourceMap.get("email")).equals(userRegistrationMap.get("username")));
     }
 
-    @Test(dependsOnMethods = "testAccessProtectedResource",alwaysRun = true)
+    @Test(dependsOnMethods = "testAccessProtectedResource",alwaysRun = true,enabled = false)
     @Transactional
     @Rollback(value = false)
     public void deleteUser() throws Exception {

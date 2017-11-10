@@ -17,6 +17,7 @@ public class Product extends CommonObject implements IProduct{
         super();
         //Generate the item number
         this.itemNumber = Utils.generateItemNumber();
+        this.upc = this.itemNumber;
     }
 
     public Product(final String itemNumber) {
@@ -34,13 +35,10 @@ public class Product extends CommonObject implements IProduct{
     @Column(name = "price",nullable = false,precision = 10,scale = 2)
     private float price;
 
-    @Column(name = "upc",nullable = false)
+    @Column(name = "upc",nullable = false,unique = true)
     private String upc;
 
-    @Column(name = "mpn",nullable = false)
-    private String mpn;
-
-    @Column(name = "item_number",nullable = false)
+    @Column(name = "item_number",nullable = false,unique = true)
     private String itemNumber;
 
     @ManyToOne(targetEntity = User.class,optional = false)
@@ -119,11 +117,6 @@ public class Product extends CommonObject implements IProduct{
     }
 
     @Override
-    public void setMPN(String mpn) {
-        this.mpn = mpn;
-    }
-
-    @Override
     public void setCurrency(ICurrency currency) {
         this.currency = currency;
     }
@@ -166,11 +159,6 @@ public class Product extends CommonObject implements IProduct{
     @Override
     public String getUPC() {
         return this.upc;
-    }
-
-    @Override
-    public String getMPN() {
-        return this.mpn;
     }
 
     @Override

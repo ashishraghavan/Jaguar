@@ -13,9 +13,11 @@ public interface ICurrency extends ICommonObject {
     //Set the full country name.
     void setCountryName(final String countryName);
     void setSymbolPosition(final CurrencySymbolPosition symbolPosition);
+    void setCurrencyName(final String currencyName);
 
     String getSymbol();
     String getCountryCode();
     String getCountryName();
     CurrencySymbolPosition getSymbolPosition();
+    String getCurrencyName();
 }

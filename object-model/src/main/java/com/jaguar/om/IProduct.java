@@ -12,7 +12,6 @@ public interface IProduct extends ICommonObject {
     void setImages(final Set<IImage> productImages);
     void setUser(final IUser user);
     void setUPC(final String upc);
-    void setMPN(final String mpn);
     void setCurrency(final ICurrency currency);
 
     String getTitle();
@@ -23,7 +22,6 @@ public interface IProduct extends ICommonObject {
     Set<IImage> getProductImages();
     IUser getUser();
     String getUPC();
-    String getMPN();
     String getItemNumber();
     ICurrency getCurrency();
 }

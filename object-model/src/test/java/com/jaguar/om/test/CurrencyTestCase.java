@@ -17,6 +17,7 @@ public class CurrencyTestCase extends BaseTestCase {
         ICurrency currency = new Currency("$","US");
         currency.setCountryName("United States of America");
         currency.setSymbolPosition(CurrencySymbolPosition.BEFORE);
+        currency.setCurrencyName("USD");
         currency = getDao().save(currency);
         Assert.assertNotNull(currency);
     }
@@ -29,5 +30,6 @@ public class CurrencyTestCase extends BaseTestCase {
         Assert.assertNotNull(currency);
         Assert.assertTrue(currency.getCountryCode().equals("US"));
         Assert.assertTrue(currency.getCountryName().equals("United States of America"));
+        Assert.assertTrue(currency.getCurrencyName().equals("USD"));
     }
 }

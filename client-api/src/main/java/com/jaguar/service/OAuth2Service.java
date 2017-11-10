@@ -153,6 +153,7 @@ public class OAuth2Service extends CommonService {
         }
 
         final String authToken = getAuthTokenFromHeaders(requestContext.getHeaderString(AUTHORIZATION));
+        //If authToken is null/empty, the authenticated user is null, otherwise check if the authToken is valid from the token cache.
         final IUser authenticatedUser = Strings.isNullOrEmpty(authToken) ? null : getCacheManager().getTokenCache().getIfPresent(authToken);
         boolean isAuthenticationRequired = false;
         boolean isSelectAccount = false;
@@ -182,6 +183,7 @@ public class OAuth2Service extends CommonService {
                 }
             }
         }
+
         //If this is select account prompt, send back a list of accounts that this user belongs to.
         if(isSelectAccount) {
             try {
@@ -201,7 +203,6 @@ public class OAuth2Service extends CommonService {
                         .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
             }
         }
-
         final String scheme = getScheme(requestContext);
         final URI absolutePath = requestContext.getUriInfo().getAbsolutePath();
         //If the current device is a desktop, we generate a unique id and append
