@@ -1,37 +1,11 @@
-## Welcome to GitHub Pages
+Jaguar is a Java based e-commerce web application with Android to be used on the front-end. The following tools/technologies are being used to develop Jaguar.
+Spring 
+Hibernate (as an ORM tool)
+Maven (for the build process)
+Jersey (as the REST framework)
+PostgresSQL (as the Database)
+Mailgun (as the email provider)
+PLivo (as the SMS provider)
 
-You can use the [editor on GitHub](https://github.com/ashishraghavan/Jaguar/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/ashishraghavan/Jaguar/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+The project consists of two modules : ObjectModel containing all the model classes (Account, User, Device, Product, Category, Filter, FilterValue etc.) and a client-api, which consists of all service classes and has a dependency on the ObjectModel. The spring-context.xml resides in the ObjectModel along with the Data Access Object layer implementation.
+OAUTH mechanism is being used for authorization. A token is device based and authorization is required for each new device added to a user. All devices are mapped to a user and for each additional device added, the user will be notified of this via email or SMS with the option of revoking the device.
