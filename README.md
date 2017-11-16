@@ -16,7 +16,7 @@ OAUTH mechanism is being used for authorization. A token is device based and aut
 Google guava is used as a timed storage mechanism for authentication tokens because of its simplicity and the fact that objects need not be serialized before storage. Redis is intended to be used in the future so that server restarts preserve all timed tokens.
 
 
-The e-commerce part of this project is comprised of the model classes Product, Category, Filter, FilterValues, Image and Cart (to be implemented). All products belong to a specific category. Each category has child categories and a parent category. Categories with no parent category are supposed to be the top level categories. For example Phones is a top level category with Cell Phones and Landline phones as its child categories. Further Cell phone cases is sub-category of Cell Phones. So the relationship is Phones -> Cell Phones -> Cell phone cases. So, Cell Phones is one of the child categories of Cell Phones and Cell phone cases is a child category of Cell Phones. On the other hand, Cell Phones is the parent category of Cell phone cases and Phones is the parent category of Cell Phones. 
+The e-commerce part of this project is comprised of the model classes Product, Category, Filter, FilterValues, Image and Cart (to be implemented). All products belong to a specific category. Each category has child categories and a parent category. Categories with no parent category are supposed to be the top level categories. For example Phones is a top level category with Cell Phones and Landline phones as its child categories. Further Cell phone cases is sub-category of Cell Phones. So the relationship is Phones -> Cell Phones -> Cell phone cases. So, Cell Phones is one of the child categories of Cell Phones and Cell phone cases is a child category of Cell Phones. On the other hand, Cell Phones is the parent category of Cell phone cases and Phones is the parent category of Cell Phones. The following sample code shows the way this relationship is achieved (taken from Category.java).
 
 ```
 @JsonIgnore
@@ -34,3 +34,5 @@ The e-commerce part of this project is comprised of the model classes Product, C
     @JoinColumn(name = "parent_category_id")
     @org.hibernate.annotations.ForeignKey(name = "fk_parent_category_id")
     private ICategory parentCategory;
+```
+Filter is a set of filters that applies to each category. Filters are not directly used on products but on categories. For example, a Cell Phone category will consist of filters such as Storage with the FilterValues object describing the possible values for a Filter (16GB,32GB,64GB etc). This way, when searching for products, the filter values can be shown to the user based on the category that comes up and if the product belongs to that category, it will show up in the search results.
