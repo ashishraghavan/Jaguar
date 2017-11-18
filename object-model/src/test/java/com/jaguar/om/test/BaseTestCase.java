@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.collect.ImmutableMap;
 import com.jaguar.om.IBaseDAO;
 import com.jaguar.om.ICategoryDAO;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
+import com.jaguar.om.IDeviceApplication;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -18,12 +18,11 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTransactionalTestNGSpringContextTests;
 import org.testng.Assert;
-import org.testng.util.Strings;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,98 +62,131 @@ public abstract class BaseTestCase extends AbstractTransactionalTestNGSpringCont
     @SuppressWarnings("unused")
     protected static CollectionType typeListMap = typeFactory.constructCollectionType(ArrayList.class,
             typeFactory.constructType(HashMap.class));
-    private String email;
     private String accessToken;
 
-    /**
-     * Utility method to get the authorization for given user form details (mostly used after a test registration).
-     * @throws Exception If an error occurred during this test.
-     * 1095369
-     * http://localhost:8080
-     * seller
-     * GOOGLECHROME
-     *
-     *
-     * authflow - true
-     */
-    @SuppressWarnings("unchecked")
-    protected void doAuthorizationAndAuthentication(final String userName,
-                                                    final String password,
-                                                    final String authFlow,
-                                                    final String redirectUri,
-                                                    final String client_id,
-                                                    final String device_uid,
-                                                    final String scopes) throws Exception {
-        final CloseableHttpClient httpClient = HttpClientBuilder.create().disableAuthCaching().disableRedirectHandling().build();
-        final HttpGet httpGet = new HttpGet("http://localhost:8080/api/oauth/authorize?response_type=json&client_id="+client_id +
-                "&redirect_uri="+redirectUri+"&scope="+scopes+"&device_uid="+device_uid);
+    protected final Map<String,String> userRegistrationMap = ImmutableMap.<String,String>builder()
+            .put("username","jaguardevelopmental@gmail.com")
+            .put("password","12345")
+            .put("device_uid","ZX1G3234RGT")
+            .put("model","Nexus6P")
+            .put("first_name","Ashish")
+            .put("last_name","Raghavan")
+            .put("phone","4082216275")
+            .put("client_id","1095369")
+            .put("api","21")
+            .put("role","seller")
+            .build();
+    private final String redirectionUri = "http://localhost:18080/client/api/files/redirection.html&scope=seller&device_uid="+ userRegistrationMap.get("device_uid");
+    private final Map<String,String> userLoginMap = ImmutableMap.<String,String>builder()
+            .put("username",userRegistrationMap.get("username"))
+            .put("password",userRegistrationMap.get("password"))
+            .put("device_uid",userRegistrationMap.get("device_uid"))
+            .put("auth_flow","true")
+            .put("redirect_uri",redirectionUri)
+            .put("client_id",userRegistrationMap.get("client_id"))
+            .put("scopes",userRegistrationMap.get("role"))
+            .put("api",userRegistrationMap.get("api"))
+            .put("model",userRegistrationMap.get("model"))
+            .build();
+
+    protected void requestAuthorizationAndGetToken() throws Exception {
+        //Turn off automatic redirection handling.
+        final CloseableHttpClient httpClient = HttpClientBuilder.create().disableRedirectHandling().build();
+        final HttpGet httpGet = new HttpGet("http://localhost:"+CLIENT_PORT+"/client/api/oauth/authorize?" +
+                "response_type=json&" +
+                "client_id="+ userRegistrationMap.get("client_id") + "&" +
+                "redirect_uri="+redirectionUri);
         final CloseableHttpResponse httpResponse = httpClient.execute(httpGet);
-        Assert.assertTrue(httpResponse.getStatusLine().getStatusCode() == HttpStatus.TEMPORARY_REDIRECT.value());
-        final Header locationHeader = httpResponse.getFirstHeader("Location");
+        final String strAuthorizationRequestResponse = EntityUtils.toString(httpResponse.getEntity());
+        Assert.assertTrue(httpResponse.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_TEMPORARY_REDIRECT,"Failed with message "+strAuthorizationRequestResponse);
+        //Get the location header.
+        final org.apache.http.Header locationHeader = httpResponse.getFirstHeader("Location");
         Assert.assertNotNull(locationHeader);
-        //Assertion that the location value from the header is not null.
-        Assert.assertNotNull(locationHeader.getValue());
-        //Since we don't have the UI, we do an HTTP post call with the required parameters.
-        final HttpPost httpPost = new HttpPost("http://localhost:8080/api/login");
-        final HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addTextBody("username",userName)
-                .addTextBody("password",password)
-                .addTextBody("auth_flow",authFlow)
-                .addTextBody("redirect_uri",redirectUri)
-                .addTextBody("client_id",client_id)
-                .addTextBody("device_uid",device_uid)
-                .addTextBody("scopes",scopes)
-                .build();
-        httpPost.setEntity(httpEntity);
-        final CloseableHttpResponse loginResponse = httpClient.execute(httpPost);
-        Assert.assertNotNull(loginResponse);
-        //We make sure that the server does an HttpStatus.SEE_OTHER redirection instead of a temporary re-direct.
-        Assert.assertTrue(loginResponse.getStatusLine().getStatusCode() == HttpStatus.SEE_OTHER.value());
-        //The value obtained from the location header should be URL for the consent.html.
-        final Header consentUrlLocation = loginResponse.getFirstHeader("Location");
-        Assert.assertNotNull(consentUrlLocation);
-        //We parse out the authorization code from the location value to get the access token in the next step.
-        final String consentUriValue = consentUrlLocation.getValue();
-        Assert.assertNotNull(consentUriValue);
-        //Make sure there is an authorization code value within the consent uri value.
-        Assert.assertTrue(consentUriValue.contains("authorization_code"));
-        int indexOfAuthorizationCode = consentUriValue.indexOf("authorization_code");
-        Assert.assertTrue(indexOfAuthorizationCode != -1 && indexOfAuthorizationCode > 0);
-        final String authorizationCodeKeyValue = consentUriValue.substring(indexOfAuthorizationCode,consentUriValue.indexOf("&",indexOfAuthorizationCode));
-        Assert.assertNotNull(authorizationCodeKeyValue);
-        final String[] authorizationCodeKVPair = authorizationCodeKeyValue.split("=");
-        Assert.assertTrue(authorizationCodeKVPair.length == 2);
-        //Get the value stored at index 1.
-        final String authorizationCode = authorizationCodeKVPair[1];
+        final String location = locationHeader.getValue();
+        Assert.assertNotNull(location);
+        final URI loginUri = URI.create(location);
+        final HttpGet getLogin = new HttpGet(loginUri);
+        final CloseableHttpResponse loginResponse = httpClient.execute(getLogin);
+        Assert.assertTrue(loginResponse.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_OK,"Failed with message "+loginResponse.getStatusLine());
+        final org.apache.http.Header contentTypeHeader = loginResponse.getFirstHeader("Content-Type");
+        Assert.assertNotNull(contentTypeHeader);
+        final String contentTypeValue = contentTypeHeader.getValue();
+        Assert.assertNotNull(contentTypeValue);
+        Assert.assertTrue(contentTypeValue.equals("text/html"));
+        //We must have the login page now.
+        final MultipartEntityBuilder loginFormEntityBuilder = MultipartEntityBuilder.create();
+        for(String formKey : userLoginMap.keySet()) {
+            loginFormEntityBuilder.addTextBody(formKey, userLoginMap.get(formKey));
+        }
+        //We need to go against the login endpoint at http://localhost:8080/client/api/login
+        final HttpPost httpPost = new HttpPost("http://localhost:"+CLIENT_PORT+"/client/api/login");
+        httpPost.setEntity(loginFormEntityBuilder.build());
+        final CloseableHttpResponse afterLoginResponse = httpClient.execute(httpPost);
+        final String afterLoginResponseStr = EntityUtils.toString(afterLoginResponse.getEntity());
+        Assert.assertTrue(afterLoginResponse.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_SEE_OTHER,"Failed with message "+afterLoginResponseStr);
+        final org.apache.http.Header afterLoginHeader = afterLoginResponse.getFirstHeader("Location");
+        Assert.assertNotNull(afterLoginHeader);
+        final String afterLoginHeaderValue = afterLoginHeader.getValue();
+        Assert.assertNotNull(afterLoginHeaderValue);
+        final URI consentUri = URI.create(afterLoginHeaderValue);
+        //Get all the query parameters.
+        final String consentQueryStr = consentUri.getQuery();
+        final String[] splitConsentStr = consentQueryStr.split("&");
+        Assert.assertTrue(splitConsentStr.length > 0);
+        final HttpGet getConsentRequest = new HttpGet(consentUri);
+        final CloseableHttpResponse beforeConsentResponse = httpClient.execute(getConsentRequest);
+        final String beforeConsentResponseStr = EntityUtils.toString(beforeConsentResponse.getEntity());
+        //Get the consent page.
+        Assert.assertTrue(beforeConsentResponse.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_OK,"Failed with message "+beforeConsentResponseStr);
+        Assert.assertNotNull(beforeConsentResponse.getFirstHeader("Content-Type"));
+        Assert.assertNotNull(beforeConsentResponse.getFirstHeader("Content-Type").getValue());
+        Assert.assertTrue(beforeConsentResponse.getFirstHeader("Content-Type").getValue().equals("text/html"));
+        //Update the consent.
+        final HttpPost updateConsentPost = new HttpPost("http://localhost:"+CLIENT_PORT+"/client/api/oauth/update");
+        final MultipartEntityBuilder consentEntityBuilder = MultipartEntityBuilder.create();
+        for(String consentKeyValue : splitConsentStr) {
+            final String[] splitConsentKV = consentKeyValue.split("=");
+            consentEntityBuilder.addTextBody(splitConsentKV[0],splitConsentKV[1]);
+        }
+        //Set the authorization to AGREE.
+        consentEntityBuilder.addTextBody("authorization",String.valueOf(IDeviceApplication.Authorization.AGREE));
+        updateConsentPost.setEntity(consentEntityBuilder.build());
+        final CloseableHttpResponse authorizationResponse = httpClient.execute(updateConsentPost);
+        final String authorizationResponseStr = EntityUtils.toString(authorizationResponse.getEntity());
+        Assert.assertTrue(authorizationResponse.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_SEE_OTHER,"Failed with message "+authorizationResponseStr);
+        final org.apache.http.Header redirectionHeader = authorizationResponse.getFirstHeader("Location");
+        Assert.assertNotNull(redirectionHeader);
+        final String redirectionHeaderValue = redirectionHeader.getValue();
+        Assert.assertNotNull(redirectionHeaderValue);
+        //No need to access this location. We just need the authorization code from the link.
+        final URI redirectionURI = URI.create(redirectionHeaderValue);
+        final String redirectionQuery = redirectionURI.getQuery();
+        Assert.assertNotNull(redirectionQuery);
+        String authorizationCode = null;
+        final String[] splitRedirectionQuery = redirectionQuery.split("&");
+        Assert.assertTrue(splitRedirectionQuery.length > 0);
+        for(String redirectionQueryKeyValue : splitRedirectionQuery) {
+            final String[] redirectionQueryKV = redirectionQueryKeyValue.split("=");
+            Assert.assertNotNull(redirectionQueryKV[0]);
+            if(redirectionQueryKV[0].equals("authorization_code")) {
+                authorizationCode = redirectionQueryKV[1];
+            }
+        }
         Assert.assertNotNull(authorizationCode);
-        //Now request the token using this authorization code. We skip the consent part because this test is for
-        //testing the part which functions after we give the consent.
-
-        final HttpPost tokenPost = new HttpPost("http://localhost:8080/api/oauth/token");
-        //Set the parameters.
-        final HttpEntity tokenEntity = MultipartEntityBuilder.create().addTextBody("authorization_code",authorizationCode)
-                .addTextBody("client_id","1095369")
-                .build();
-        tokenPost.setEntity(tokenEntity);
+        //Finally get the token using this code.
+        final HttpPost tokenPost = new HttpPost("http://localhost:"+CLIENT_PORT+"/client/api/oauth/token");
+        final MultipartEntityBuilder tokenBuilder = MultipartEntityBuilder.create();
+        tokenBuilder.addTextBody("authorization_code",authorizationCode);
+        tokenBuilder.addTextBody("client_id",userRegistrationMap.get("client_id"));
+        tokenBuilder.addTextBody("device_uid",userRegistrationMap.get("device_uid"));
+        tokenPost.setEntity(tokenBuilder.build());
         final CloseableHttpResponse tokenResponse = httpClient.execute(tokenPost);
-        Assert.assertTrue(tokenResponse.getStatusLine().getStatusCode() == HttpStatus.OK.value());
-        //Get the response string and assert it's not null.
-        final String responseString = EntityUtils.toString(tokenResponse.getEntity());
-        Assert.assertTrue(!Strings.isNullOrEmpty(responseString));
-        final Map<String,Object> responseMap = mapper.readValue(responseString,typeMapStringObject);
-        Assert.assertTrue(responseMap != null && !responseMap.isEmpty());
-        Assert.assertNotNull(responseMap.get("user"));
-        Assert.assertTrue(responseMap.get("user") instanceof Map);
-        final Map<String,Object> userMap = (Map<String,Object>)responseMap.get("user");
-        Assert.assertNotNull(userMap.get("email"));
-        email = userMap.get("email").toString();
-        Assert.assertNotNull(responseMap.get("access_token"));
-        Assert.assertNotNull(responseMap.get("refresh_token"));
-        accessToken = responseMap.get("access_token").toString();
-    }
-
-    protected String getEmail() {
-        return email;
+        final String stringifiedTokenResponse = EntityUtils.toString(tokenResponse.getEntity());
+        Assert.assertTrue(tokenResponse.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_OK,"Failed with message "+stringifiedTokenResponse);
+        final Map<String,Object> tokenMap = mapper.readValue(stringifiedTokenResponse,typeMapStringObject);
+        Assert.assertNotNull(tokenMap.get("access_token"));
+        Assert.assertNotNull(tokenMap.get("refresh_token"));
+        accessToken = (String)tokenMap.get("access_token");
     }
 
     protected String getAccessToken() {

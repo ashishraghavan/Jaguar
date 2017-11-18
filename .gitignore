@@ -7,6 +7,9 @@
 # BlueJ files
 *.ctxt
 
+#Do not commit Notes.md as it contains sensitive information.
+Notes.md
+
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 

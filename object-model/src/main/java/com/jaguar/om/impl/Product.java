@@ -1,5 +1,6 @@
 package com.jaguar.om.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.*;
 import com.jaguar.om.common.Utils;
 import org.hibernate.annotations.LazyCollection;
@@ -56,6 +57,7 @@ public class Product extends CommonObject implements IProduct{
     @org.hibernate.annotations.ForeignKey(name = "fk_product_category_id")
     private ICategory category;
 
+    @JsonIgnore
     @OneToMany(targetEntity = Image.class,mappedBy = "product",fetch = FetchType.LAZY,orphanRemoval = true)
     @LazyCollection(LazyCollectionOption.EXTRA)
     private Set<IImage> productImages;

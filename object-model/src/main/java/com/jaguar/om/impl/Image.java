@@ -1,5 +1,6 @@
 package com.jaguar.om.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaguar.om.IImage;
 import com.jaguar.om.IProduct;
 import org.hibernate.annotations.Type;
@@ -11,6 +12,7 @@ import javax.persistence.*;
 @AttributeOverride(name = "id",column = @Column(name = "product_image_id"))
 public class Image extends CommonObject implements IImage {
 
+    @JsonIgnore
     @Type(type = "org.hibernate.type.BinaryType")
     @Column(name = "background_image", nullable = false)
     private byte[] productImage;

@@ -259,6 +259,7 @@ public class AuthenticationService extends CommonService {
             final String scheme = getScheme(requestContext);
             //If this is the authorization flow (consent), we send the user to the redirection URI
             //with the authorization code appended to the URI.
+            //Check if this device has already authorized application for this device.
             if(isConsentFlow) {
                 //We need the re-redirect URI for this case.
                 URI finalRedirectURI = null;

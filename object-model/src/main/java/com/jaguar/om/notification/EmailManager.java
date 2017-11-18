@@ -26,8 +26,8 @@ public class EmailManager extends CommonObject implements IEmailManager {
     private static final String getMail_smtp_socketfactory_class_value = "javax.net.ssl.SSLSocketFactory";
     private static final String mail_smtp_socketFactory_port = "mail.smtp.socketFactory.port";
     private static final String getMail_smtp_socketFactory_port_value = "465";
-    private static final String USERNAME = "postmaster@ashishraghavan.me";
-    private static final String PASSWORD = "52759edfe8f6a63c00dd2fd8ff4d75cd";
+    private static final String USERNAME = "postmaster@www.dev-jaguar.xyz";
+    private static final String PASSWORD = "df623f3bd638d2f515cff3a1e5b51069";
 
     //Key Values for mail message header.
     private static final String CONTENT_TYPE = "Content-type";
