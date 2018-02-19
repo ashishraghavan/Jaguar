@@ -6,6 +6,7 @@ import com.jaguar.om.ICommonObject;
 import com.jaguar.om.enums.EOrder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Session;
@@ -25,6 +26,8 @@ import java.util.*;
 @Repository
 @SuppressWarnings("deprecation")
 public class BaseDAO implements IBaseDAO {
+
+    protected static final Logger daoLogger = Logger.getLogger(BaseDAO.class.getSimpleName());
 
     @PersistenceContext(unitName = "ObjectModel")
     public EntityManager entityManager;

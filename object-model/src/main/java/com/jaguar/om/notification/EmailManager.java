@@ -3,71 +3,66 @@ package com.jaguar.om.notification;
 
 import com.jaguar.om.IEmailManager;
 import com.jaguar.om.impl.CommonObject;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.testng.util.Strings;
-
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import java.util.Properties;
 
 @Component
 public class EmailManager extends CommonObject implements IEmailManager {
 
     private static final Logger emailLogger = Logger.getLogger(EmailManager.class.getSimpleName());
-    private static final String mail__smtp_host = "mail.smtp.host";
-    private static final String mail_smtp_host_value = "smtp.mailgun.org";
-    private static final String mail_smtp_port = "mail.smtp.port";
-    private static final String mail_smtp_port_value = "456";
-    private static final String mail_smtp_auth = "mail.smtp.auth";
-    private static final String mail_smtp_auth_value = "true";
-    private static final String mail_smtp_socketfactory_class = "mail.smtp.socketFactory.class";
-    private static final String getMail_smtp_socketfactory_class_value = "javax.net.ssl.SSLSocketFactory";
-    private static final String mail_smtp_socketFactory_port = "mail.smtp.socketFactory.port";
-    private static final String getMail_smtp_socketFactory_port_value = "465";
-    private static final String USERNAME = "postmaster@www.dev-jaguar.xyz";
-    private static final String PASSWORD = "df623f3bd638d2f515cff3a1e5b51069";
-
-    //Key Values for mail message header.
-    private static final String CONTENT_TYPE = "Content-type";
-    private static final String CONTENT_TYPE_VALUE = "text/HTML; charset=UTF-8";
-    private static final String FORMAT = "format";
-    private static final String FORMAT_VALUE = "flowed";
-    private static final String CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
-    private static final String CONTENT_TRANSFER_ENCODING_VALUE = "8bit";
-
+    private static final String DOMAIN = "www.dev-jaguar.xyz";
+    private static final String API_URL = String.format("https://api.mailgun.net/v3/%s/messages",DOMAIN);
+    private static final String API_AUTH_NAME = "api";
+    private static final String API_AUTH_VALUE = "key-910ae7b7d0722488c0951dfce679fe76";
+    private static final String FROM = "from";
+    private static final String FROM_VALUE = "Ashish Raghavan <ashish.raghavan@www.dev-jaguar.xyz>";
+    private static final String TO = "to";
+    private static final String SUBJECT = "subject";
+    private static final String TEXT = "text";
 
     public static EmailBuilder builder() {
         return new EmailBuilder();
     }
-
+//{"id":"<20180219171555.1.390BA4669DA4A6A7@www.dev-jaguar.xyz>","message":"Queued. Thank you."}
     @Override
     public void sendEmail(Email email) throws Exception {
-        final Authenticator authenticator = new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(USERNAME,PASSWORD);
-            }
-        };
-        final Properties properties = new Properties();
-        properties.setProperty(mail__smtp_host,mail_smtp_host_value);
-        properties.setProperty(mail_smtp_port,mail_smtp_port_value);
-        properties.setProperty(mail_smtp_auth,mail_smtp_auth_value);
-        properties.setProperty(mail_smtp_socketfactory_class,getMail_smtp_socketfactory_class_value);
-        properties.setProperty(mail_smtp_socketFactory_port,getMail_smtp_socketFactory_port_value);
-        final Session session = Session.getInstance(properties,authenticator);
-        //Set the debug flag to true.
-        session.setDebug(true);
-        final MimeMessage message = new MimeMessage(session);
-        message.addHeader(CONTENT_TYPE,CONTENT_TYPE_VALUE);
-        message.addHeader(FORMAT,FORMAT_VALUE);
-        message.addHeader(CONTENT_TRANSFER_ENCODING,CONTENT_TRANSFER_ENCODING_VALUE);
-        message.setFrom(USERNAME);
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(email.getTo()));
-        message.setSubject(email.getSubject());
-        message.setText(email.getBody(),"UTF-8");
-        Transport.send(message);
+        HttpResponse<JsonNode> request = Unirest.post(API_URL)
+                .basicAuth(API_AUTH_NAME, API_AUTH_VALUE)
+                .queryString(FROM, FROM_VALUE)
+                .queryString(TO, email.getTo())
+                .queryString(SUBJECT, email.getSubject())
+                .queryString(TEXT,email.getBody())
+                .asJson();
+        if(request.getStatus() != org.apache.http.HttpStatus.SC_OK) {
+            final String errorMessage = "There was an error sending the email message to "+email.getTo()+" with exception "+request.getStatusText();
+            emailLogger.error(errorMessage);
+            throw new Exception(errorMessage);
+        }
+        //Check if we got an id in the JSON response.
+        if(request.getBody().getObject() == null) {
+            emailLogger.error("There was an error obtaining the JSON result object from the JSON response");
+            throw new Exception("There was an error obtaining the JSON result object from the JSON response");
+        }
+        final JSONObject jsonObject = request.getBody().getObject();
+        if(jsonObject.get("id") == null) {
+            emailLogger.error("The JSON object does not contain the key id (no message id found)");
+            throw new Exception("The JSON object does not contain the key id (no message id found)");
+        }
+        if(jsonObject.get("message") == null) {
+            emailLogger.error("The JSON object does not contain the key message (no message found)");
+            throw new Exception("The JSON object does not contain the key message (no message found)");
+        }
+        //At this point we can be sure that the email was sent successfully or atleast queued to be sent.
+        emailLogger.info("The email message was sent/queued to be sent successfully");
+        emailLogger.info("Headers : "+request.getHeaders());
+        emailLogger.info("Status Text : "+request.getStatusText());
+        emailLogger.info("Status : "+request.getStatus());
+        emailLogger.info("Body:"+request.getBody());
     }
 
     @Override
@@ -131,8 +126,6 @@ public class EmailManager extends CommonObject implements IEmailManager {
                 .to("jaguardevelopmental@gmail.com")
                 .subject("Verify your registration")
                 .build();
-        for(int i = 0;i<3;i++) {
-            emailManager.sendEmail(email);
-        }
+        emailManager.sendEmail(email);
     }
 }

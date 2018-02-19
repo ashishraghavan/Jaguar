@@ -135,6 +135,7 @@ public class AuthenticationService extends CommonService {
             user = getDao().loadSingleFiltered(user, null, false);
             if (user == null) {
                 //We did not find this user under this account.
+                serviceLogger.error("We did not find the user "+username+" in our database");
                 return Response.status(HttpStatus.BAD_REQUEST.value())
                         .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.NOT_FOUND)
                                 .withMessage("The device with id " + deviceUid).build()).build();

@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 public class CommonService extends CommonConstants {
     protected final Logger serviceLogger = Logger.getRootLogger();
     private IBaseDAO dao;
+    private IProductDAO productDAO;
     private ICacheManager cacheManager;
     private final String classNameHashCodeTemplate = "Classname/hashcode : %s / %d";
     protected static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false)
@@ -46,6 +47,11 @@ public class CommonService extends CommonConstants {
     }
 
     @Autowired
+    public void setProductDAO(IProductDAO productDAO) {
+        this.productDAO = productDAO;
+    }
+
+    @Autowired
     public void setCacheManager(ICacheManager cacheManager) {
         this.cacheManager = cacheManager;
         serviceLogger.info(String.format(classNameHashCodeTemplate, this.cacheManager.getClass().getSimpleName(), this.cacheManager.hashCode()));
@@ -53,6 +59,10 @@ public class CommonService extends CommonConstants {
 
     protected IBaseDAO getDao() {
         return this.dao;
+    }
+
+    protected IProductDAO getProductDAO() {
+        return this.productDAO;
     }
 
     protected ICacheManager getCacheManager() {
@@ -115,6 +125,25 @@ public class CommonService extends CommonConstants {
             return getDao().loadSingleFiltered(role,null,false);
         } catch (Exception e) {
             serviceLogger.error("There was an error querying the role by name "+roleName+" with the exception "+e.getLocalizedMessage());
+            return null;
+        }
+    }
+
+    @Transactional
+    protected IUser getUser(final IUser user) {
+        if(user == null) {
+            throw new NullPointerException("User object expected to be non-null");
+        }
+        IUser userFromDb;
+        try {
+            userFromDb = getDao().loadSingleFiltered(user,null,false);
+            if(userFromDb == null) {
+                serviceLogger.info("There is no user with the email "+user.getEmail()+", the user search returned null");
+                return null;
+            }
+            return userFromDb;
+        } catch (Exception e) {
+            serviceLogger.error("There was an error querying the user object with exception "+e.getLocalizedMessage());
             return null;
         }
     }

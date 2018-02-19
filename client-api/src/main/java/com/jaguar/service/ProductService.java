@@ -29,6 +29,8 @@ import java.util.List;
 @Path("/product")
 public class ProductService extends CommonService {
 
+
+
     @POST
     @Transactional
     @Produces(MediaType.APPLICATION_JSON)
@@ -155,7 +157,93 @@ public class ProductService extends CommonService {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchProducts(@QueryParam("advanced") final String isAdvancedSearch) {
+    @Transactional
+    public Response searchProducts(@QueryParam("search_term") final String freeText,
+                                   @QueryParam("advanced") final String advancedSearchFlag,
+                                   @QueryParam("title") final String searchTitle,
+                                   @QueryParam("description") final String description,
+                                   @QueryParam("starting_price") final String startingPrice,
+                                   @QueryParam("ending_price") final String endingPrice,
+                                   @QueryParam("item_number") final String itemNumber,
+                                   @QueryParam("buying_format") final String buyingFormat,
+                                   @QueryParam("category") final String category,
+                                   @QueryParam("upc") final String upc,
+                                   @QueryParam("start") final String startIndex,
+                                   @QueryParam("size") final String endIndex) {
+        int start = -1;
+        int size = -1;
+        if(!Strings.isNullOrEmpty(startIndex)) {
+            if(!NumberUtils.isCreatable(startIndex)) {
+                serviceLogger.error("The start parameter needs to be a number");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage("start","Integer").build()).build();
+            }
+            start = Integer.parseInt(startIndex);
+        }
+        if(start == -1) {
+            start = DEFAULT_START;
+        }
+        if(!Strings.isNullOrEmpty(endIndex)) {
+            if(!NumberUtils.isCreatable(endIndex)) {
+                serviceLogger.error("The size parameter needs to be a number");
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage("size","Integer").build()).build();
+            }
+            size = Integer.parseInt(endIndex);
+        }
+        if(size == -1) {
+            size = DEFAULT_SIZE;
+        }
+        boolean isAdvancedSearch = false;
+        if(!Strings.isNullOrEmpty(advancedSearchFlag)) {
+            //Make sure the advanced search flag is true or false.
+            if(!advancedSearchFlag.toLowerCase().equals("true") && !advancedSearchFlag.toLowerCase().equals("false")) {
+                serviceLogger.error("Invalid option specified for the advanced search flag. Expected values are true or false, but found "+advancedSearchFlag);
+                return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INVALID_ARGUMENT).withMessage("advanced","true or false").build()).build();
+            }
+            isAdvancedSearch = Boolean.parseBoolean(advancedSearchFlag);
+        }
+
+        if(!isAdvancedSearch) {
+            //This is a free text search.
+            if(Strings.isNullOrEmpty(freeText)) {
+                if(Strings.isNullOrEmpty(freeText)) {
+                    serviceLogger.info("Free text search is empty, returning 204");
+                    return Response.noContent().build();
+                }
+            }
+            try {
+                final List<IProduct> productList = getProductDAO().getAllProductsByFreeText(freeText,start,size);
+                if(productList == null || productList.isEmpty()) {
+                    serviceLogger.info("Empty result from searching products, returning 204");
+                    return Response.noContent().build();
+                }
+                return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(productList)).build();
+            } catch (Exception e) {
+                serviceLogger.error("There was an error querying for products by free text with exception "+e.getLocalizedMessage());
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
+            }
+        }
+
+        //determine what type of advanced search is this.
+        if(!Strings.isNullOrEmpty(searchTitle)) {
+            //search products by product title.
+            final List<IProduct> productList = getProductDAO().getProductsByTitle(searchTitle,start,size);
+            if(productList == null || productList.isEmpty()) {
+                serviceLogger.info("Null/empty product list for the title search term "+searchTitle);
+                return Response.noContent().build();
+            }
+            try {
+                return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(productList)).build();
+            } catch (Exception e) {
+                serviceLogger.error("Failed to write product list as a JSON with exception "+e.getLocalizedMessage());
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
+            }
+        }
+
         return Response.ok().build();
     }
 

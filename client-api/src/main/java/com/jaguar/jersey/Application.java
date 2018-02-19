@@ -24,5 +24,6 @@ public class Application extends ResourceConfig {
         register(MultiPartFeature.class);
         register(UserService.class);
         register(ProductService.class);
+        register(CartService.class);
     }
 }

@@ -9,6 +9,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.annotations.ForeignKey;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.security.Principal;
@@ -74,6 +75,10 @@ public class User extends CommonObject implements IUser,Principal{
 
     @Column(name = "phone_number",nullable = true, insertable = true,updatable = true)
     private String phoneNumber;
+
+    @Type(type = "org.hibernate.type.BinaryType")
+    @Column(name = "profile_image")
+    private byte[] profileImage;
 
     @JsonIgnore
     @OneToMany(targetEntity = Device.class,cascade = CascadeType.ALL,fetch = FetchType.LAZY,mappedBy = "user",orphanRemoval = true)
@@ -144,6 +149,16 @@ public class User extends CommonObject implements IUser,Principal{
     @Override
     public String getPhoneNumber() {
         return this.phoneNumber;
+    }
+
+    @Override
+    public void setImage(byte[] profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    @Override
+    public byte[] getProfileImage() {
+        return this.profileImage;
     }
 
 }

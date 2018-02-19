@@ -25,4 +25,8 @@ public class CommonConstants {
             "%s";
     protected static final String DEVICE_ADDITION_LINK = "You have signed on using the device %s. Click %s for details of this device.";
     protected static final String NEW_DEVICE_ADDED = "Review Sign-In";
+    //Default start
+    protected static final int DEFAULT_START = 0;
+    //Default size
+    protected static final int DEFAULT_SIZE = 20;
 }

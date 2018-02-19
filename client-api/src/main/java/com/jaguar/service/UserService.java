@@ -1,5 +1,6 @@
 package com.jaguar.service;
 
+import com.google.common.io.ByteStreams;
 import com.jaguar.common.CommonService;
 import com.jaguar.exception.ErrorMessage;
 import com.jaguar.jersey.provider.JaguarSecurityContext;
@@ -9,6 +10,7 @@ import com.jaguar.om.impl.*;
 import com.jaguar.om.notification.Email;
 import com.jaguar.om.notification.EmailManager;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
@@ -68,6 +72,8 @@ public class UserService extends CommonService {
                                  final @FormDataParam("client_id") String clientIdStr,
                                  final @FormDataParam("api") String api,
                                  final @FormDataParam("notification_service_id") String notificationServiceId,
+                                 final @FormDataParam("profile_image")InputStream profileImage,
+                                 final @FormDataParam("profile_image") FormDataContentDisposition profileDataContentDisposition,
                                  final @Context ContainerRequestContext requestContext) {
 
         //These are the basic validation fields.
@@ -169,6 +175,10 @@ public class UserService extends CommonService {
                     (Strings.isNullOrEmpty(user.getLastName()) ? "" : user.getLastName().trim());
             user.setName(fullName);
             user.setPassword(password);
+            //Set the profile image if supplied.
+            if(profileImage != null) {
+                user.setImage(ByteStreams.toByteArray(profileImage));
+            }
             //Set the user active to false until the user confirms by using either the phone or email
             //method of verification.
             user.setActive(false);
@@ -246,6 +256,57 @@ public class UserService extends CommonService {
             serviceLogger.error("There was error querying the application using the client id "+clientIdStr+" with exception "+e.getLocalizedMessage());
             return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR)).build();
+        }
+    }
+
+    @POST
+    @Path("/update")
+    @Transactional
+    public Response updateUser(final @Context SecurityContext securityContext,
+                               final @FormDataParam("first_name") String firstName,
+                               final @FormDataParam("last_name") String lastName,
+                               final @FormDataParam("phone") String phone,
+                               final @FormDataParam("profile_image")InputStream profileImage,
+                               final @FormDataParam("profile_image") FormDataContentDisposition profileDataContentDisposition) {
+        IUser authenticatedUser = (IUser)securityContext.getUserPrincipal();
+        if(authenticatedUser == null) {
+            serviceLogger.error("There was an error obtaining the user from the token");
+            return Response.status(HttpStatus.UNAUTHORIZED.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.NOT_AUTHORIZED).build()).build();
+        }
+        //Get the user now.
+        IUser userFromDb = getUser(authenticatedUser);
+        if(userFromDb == null) {
+            serviceLogger.error("There is no user with the email "+authenticatedUser.getEmail());
+            return Response.status(HttpStatus.BAD_REQUEST.value()).entity(ErrorMessage.builder()
+                    .withErrorCode(ErrorMessage.NOT_FOUND).withMessage("The user with email "+authenticatedUser.getEmail()).build()).build();
+        }
+        if(!Strings.isNullOrEmpty(firstName)) {
+            userFromDb.setFirstName(firstName);
+        }
+        if(!Strings.isNullOrEmpty(lastName)) {
+            userFromDb.setLastName(lastName);
+        }
+        if(!Strings.isNullOrEmpty(phone)) {
+            //TODO verify if this is a US phone number.
+            userFromDb.setPhoneNumber(phone);
+        }
+        if(profileImage != null) {
+            try {
+                userFromDb.setImage(ByteStreams.toByteArray(profileImage));
+            } catch (Exception e) {
+                serviceLogger.error("There was an error updating the user profile image with exception "+e.getLocalizedMessage());
+                return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder()
+                        .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
+            }
+        }
+        //Save the updated user.
+        try {
+            userFromDb = getDao().save(userFromDb);
+            return Response.ok().entity(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(userFromDb)).build();
+        } catch (Exception e) {
+            serviceLogger.error("There was an error saving/updating the user with exception "+e.getLocalizedMessage());
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).entity(ErrorMessage.builder().withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
         }
     }
 
