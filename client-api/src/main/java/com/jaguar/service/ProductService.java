@@ -30,7 +30,17 @@ import java.util.List;
 public class ProductService extends CommonService {
 
 
-
+    /**
+     *
+     * @param title The title of the product [Is required]
+     * @param description The description of the product [Is required]
+     * @param price The price of the product [Is required]
+     * @param buyingFormatStr The buying format for this product. [Can be Auction or Buy It Now.]
+     * @param category The category under which this product needs to be listed [See {@link Category}]
+     * @param currencyName The currency name under which this product is listed. [Is useful only in case this product appears under multiple countries]
+     * @param securityContext The client api security context.
+     * @return The created {@link Product} or an exception if there was an error creating the product.
+     */
     @POST
     @Transactional
     @Produces(MediaType.APPLICATION_JSON)
@@ -154,6 +164,8 @@ public class ProductService extends CommonService {
                     .withErrorCode(ErrorMessage.INTERNAL_SERVER_ERROR).build()).build();
         }
     }
+
+
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
